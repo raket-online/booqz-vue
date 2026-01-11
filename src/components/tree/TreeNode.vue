@@ -114,23 +114,116 @@ onMounted(() => {
       ghostClass: 'sortable-ghost',
       dragClass: 'sortable-drag',
       onEnd: async (evt) => {
-        const { item, newIndex, oldIndex } = evt
-        const itemId = parseInt(item.dataset.id || '0')
-        const itemType = item.dataset.type || 'content'
+        try {
+          const { item, newIndex, oldIndex } = evt
+          const itemId = parseInt(item.dataset.id || '0')
+          const itemType = item.dataset.type || 'content'
 
-        if (newIndex !== undefined && oldIndex !== undefined && newIndex !== oldIndex) {
-          console.log('Item moved:', itemId, itemType, 'from', oldIndex, 'to', newIndex)
+          if (newIndex !== undefined && oldIndex !== undefined && newIndex !== oldIndex) {
+            console.log('=== DRAG DROP REORDER START ===')
+            console.log('Looking for section ID:', props.section.id, 'in', props.section.title)
+            console.log('Item moved:', itemId, itemType, 'from', oldIndex, 'to', newIndex)
+            console.log('Book has', bookStore.book?.sections.length || 0, 'top-level sections')
 
-          // Find the section in the store to ensure proper reactivity
-          const section = bookStore.findSection(props.section.id)
-          if (section && itemType === 'content') {
-            // Reorder content items
-            const items = [...section.contentItems]
-            const [movedItem] = items.splice(oldIndex!, 1)
-            items.splice(newIndex!, 0, movedItem)
-            section.contentItems = items
-            await bookStore.saveBook()
+            // Log all available sections for debugging
+            if (bookStore.book) {
+              console.log('All section IDs:', bookStore.book.sections.map(s => ({ id: s.id, title: s.title })))
+            }
+
+            // Find the actual section in the store's book
+            console.log('Calling findSection for ID:', props.section.id)
+            const section = bookStore.findSection(props.section.id)
+            console.log('findSection returned:', section ? section.title : 'NULL')
+
+            if (!section) {
+              console.error('Section NOT found! ID:', props.section.id)
+              console.error('Available section IDs:', bookStore.book?.sections.map(s => s.id))
+              return
+            }
+
+            console.log('✓ Section found:', section.title, 'with', section.contentItems.length, 'content items, and', section.subsections.length, 'subsections')
+
+            // Handle reordering based on itemType
+            if (itemType === 'paragraph' || itemType === 'image') {
+              // Reordering content items (paragraphs/images)
+              console.log('Reordering content item:', itemType)
+              console.log('Content items before reorder:', section.contentItems.map(i => ({ id: i.id, type: i.type })))
+
+              // Get the current content items array from the found section
+              const contentItems = section.contentItems
+
+              // Verify we have items to move
+              if (oldIndex >= contentItems.length || newIndex >= contentItems.length) {
+                console.error('Invalid indices:', { oldIndex, newIndex, length: contentItems.length })
+                return
+              }
+
+              // Remove from old position and insert at new position
+              const [movedItem] = contentItems.splice(oldIndex!, 1)
+              contentItems.splice(newIndex!, 0, movedItem)
+
+              console.log('Content items after splice:', section.contentItems.map(i => ({ id: i.id, type: i.type })))
+
+              // Update sortOrder for all items to match their new positions
+              contentItems.forEach((item, index) => {
+                item.sortOrder = index
+              })
+
+              // CRITICAL: Create a completely new array and replace to trigger Vue's reactivity
+              section.contentItems = Array.from(contentItems)
+
+              console.log('Content items after replacement:', section.contentItems.map(i => ({ id: i.id, type: i.type, order: i.sortOrder })))
+
+              // Save the entire book to persist changes
+              console.log('Calling saveBook()...')
+              await bookStore.saveBook()
+              console.log('✓ saveBook() completed - Content items reordered')
+
+            } else if (itemType === 'section') {
+              // Reordering subsections (chapters/subchapters)
+              console.log('Reordering subsection')
+              console.log('Subsections before reorder:', section.subsections.map(s => ({ id: s.id, title: s.title })))
+
+              // Get the current subsections array
+              const subsections = section.subsections
+
+              // Verify we have items to move
+              if (oldIndex >= subsections.length || newIndex >= subsections.length) {
+                console.error('Invalid subsection indices:', { oldIndex, newIndex, length: subsections.length })
+                return
+              }
+
+              // Remove from old position and insert at new position
+              const [movedSection] = subsections.splice(oldIndex!, 1)
+              subsections.splice(newIndex!, 0, movedSection)
+
+              console.log('Subsections after splice:', section.subsections.map(s => ({ id: s.id, title: s.title })))
+
+              // Update sortOrder and numbering for all subsections
+              subsections.forEach((sub, index) => {
+                sub.sortOrder = index
+                sub.number = index + 1
+              })
+
+              // CRITICAL: Create a completely new array to trigger Vue's reactivity
+              section.subsections = Array.from(subsections)
+
+              console.log('Subsections after replacement:', section.subsections.map(s => ({ id: s.id, title: s.title, order: s.sortOrder })))
+
+              // Save the entire book to persist changes
+              console.log('Calling saveBook()...')
+              await bookStore.saveBook()
+              console.log('✓ saveBook() completed - Subsections reordered')
+
+            } else {
+              console.log('Skipping reorder - unknown item type:', itemType)
+            }
+          } else {
+            console.log('Skipping reorder - no change ( newIndex === oldIndex )')
           }
+        } catch (error) {
+          console.error('ERROR in drag-drop handler:', error)
+          console.error('Error stack:', (error as Error).stack)
         }
       }
     })
@@ -183,15 +276,25 @@ onMounted(() => {
         <!-- Section Title & Info -->
         <div class="flex-1 min-w-0">
           <!-- View Mode -->
-          <h3 v-if="!isEditingTitle"
-              @click="startEditTitle"
-              class="text-sm font-medium truncate transition-colors duration-200 cursor-pointer group"
-              :style="isSectionSelected ? 'color: var(--color-text-primary);' : 'color: var(--color-text-secondary);'">
-            {{ section.title }}
-            <svg class="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200 inline-block ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: var(--color-accent);">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
-            </svg>
-          </h3>
+          <template v-if="!isEditingTitle">
+            <div class="flex items-center gap-1 group">
+              <h3 class="text-sm font-medium truncate transition-colors duration-200 flex-1"
+                  :style="isSectionSelected ? 'color: var(--color-text-primary);' : 'color: var(--color-text-secondary);'">
+                {{ section.title }}
+              </h3>
+              <!-- Edit Icon - only visible on hover -->
+              <button
+                @click="startEditTitle"
+                class="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-150 p-0.5 rounded hover-lift"
+                style="color: var(--color-text-tertiary);"
+                title="Click to rename"
+              >
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
+                </svg>
+              </button>
+            </div>
+          </template>
           <!-- Edit Mode -->
           <input v-else
                  ref="titleInput"

@@ -187,8 +187,8 @@ export const useBookStore = defineStore('book', () => {
 
     // Generate title based on parent type
     const defaultTitle = parent.type === 'chapter'
-      ? `Section ${parent.subsections.length + 1}`
-      : `Subsection ${parent.subsections.length + 1}`
+      ? `Subchapter ${parent.subsections.length + 1}`
+      : `Subchapter ${parent.subsections.length + 1}`
 
     const subchapter: Section = {
       id: generateId(),
