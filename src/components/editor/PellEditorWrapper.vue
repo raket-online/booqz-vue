@@ -155,26 +155,27 @@ defineExpose({
 <template>
   <div class="pell-editor-wrapper h-full flex flex-col">
     <!-- Microphone Button -->
-    <div class="flex items-center gap-2 p-2 bg-gray-50 border-b border-gray-200">
+    <div class="flex items-center gap-2 px-3 py-2 border-b transition-all duration-200"
+         style="border-bottom-color: rgba(26, 26, 26, 0.06); background: var(--color-bg-secondary);">
       <button
         @click="toggleRecording"
         :disabled="disabled"
-        class="mic-button relative p-2 rounded-lg transition-all duration-200"
+        class="mic-button relative p-2 rounded-lg transition-all duration-200 hover:scale-105 disabled:hover:scale-100 disabled:cursor-not-allowed"
         :class="{
-          'bg-gray-200 text-gray-600 hover:bg-gray-300': isIdle,
-          'bg-orange-100 text-orange-600 animate-pulse': isConnecting,
-          'bg-red-500 text-white animate-pulse-red': isRecording,
-          'bg-red-100 text-red-600': hasError
+          'mic-idle': isIdle,
+          'mic-connecting': isConnecting,
+          'mic-recording': isRecording,
+          'mic-error': hasError
         }"
         :title="isRecording ? 'Stop recording (Ctrl+M)' : 'Start dictation (Ctrl+M)'"
       >
         <i class="fas fa-microphone text-lg"></i>
         <span v-if="isRecording" class="absolute -top-1 -right-1 flex h-3 w-3">
-          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-          <span class="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+          <span class="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75"></span>
+          <span class="relative inline-flex rounded-full h-3 w-3"></span>
         </span>
       </button>
-      <span class="text-xs text-gray-500">
+      <span class="text-xs transition-colors duration-200" style="color: var(--color-text-tertiary);">
         {{ isIdle ? 'Click to dictate' : isConnecting ? 'Connecting...' : isRecording ? 'Recording...' : 'Error' }}
       </span>
     </div>
@@ -193,12 +194,17 @@ defineExpose({
 }
 
 .pell {
-  @apply rounded-lg border border-gray-300 bg-white flex flex-col;
+  @apply rounded-lg flex flex-col;
+  background: var(--color-bg-primary);
+  border: 1px solid rgba(26, 26, 26, 0.06);
   overflow: hidden;
 }
 
 .pell-content {
   @apply p-4 flex-1 outline-none overflow-y-auto;
+  color: var(--color-text-primary);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  line-height: 1.6;
 }
 
 .pell-content:focus {
@@ -210,15 +216,29 @@ defineExpose({
 }
 
 :deep(.pell-actionbar) {
-  @apply flex flex-wrap gap-1 p-2 border-b border-gray-200 bg-gray-50;
+  @apply flex flex-wrap gap-1 p-2;
+  border-bottom: 1px solid rgba(26, 26, 26, 0.06);
+  background: var(--color-bg-secondary);
 }
 
 :deep(.pell-button) {
-  @apply px-3 py-1.5 rounded transition-colors duration-150 text-gray-600 hover:text-gray-900 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium;
+  @apply px-3 py-1.5 rounded transition-all duration-150 text-sm font-medium;
+  color: var(--color-text-secondary);
+}
+
+:deep(.pell-button:hover) {
+  color: var(--color-text-primary);
+  background: rgba(26, 26, 26, 0.06);
+}
+
+:deep(.pell-button:focus) {
+  outline: 2px solid var(--color-primary-light);
+  outline-offset: 2px;
 }
 
 :deep(.pell-button-selected) {
-  @apply bg-gray-300 text-gray-900;
+  background: var(--color-bg-tertiary);
+  color: var(--color-text-primary);
 }
 
 :deep(.pell-content p) {
@@ -239,24 +259,69 @@ defineExpose({
 }
 
 :deep(.pell-content a) {
-  @apply text-blue-600 underline hover:text-blue-700;
+  color: var(--color-primary);
+  text-decoration: underline;
+}
+
+:deep(.pell-content a:hover) {
+  color: var(--color-primary-dark);
 }
 
 :deep(.pell-content img) {
   @apply max-w-full h-auto rounded;
 }
 
+/* Microphone states */
+.mic-idle {
+  background: var(--color-bg-tertiary);
+  color: var(--color-text-secondary);
+}
+
+.mic-idle:hover {
+  background: var(--color-bg-secondary);
+}
+
+.mic-connecting {
+  background: rgba(212, 165, 116, 0.15);
+  color: var(--color-warning);
+  animation: pulse-subtle 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.mic-recording {
+  background: var(--color-error);
+  color: white;
+  animation: pulse-recording 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.mic-recording .animate-ping {
+  background: rgba(255, 255, 255, 0.4);
+}
+
+.mic-recording .relative inline-flex {
+  background: white;
+}
+
+.mic-error {
+  background: rgba(198, 93, 93, 0.15);
+  color: var(--color-error);
+}
+
 /* Custom animations */
-@keyframes pulse-red {
+@keyframes pulse-recording {
   0%, 100% {
-    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+    box-shadow: 0 0 0 0 rgba(198, 93, 93, 0.7);
   }
   50% {
-    box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);
+    box-shadow: 0 0 0 10px rgba(198, 93, 93, 0);
   }
 }
 
-.mic-button.animate-pulse-red {
-  animation: pulse-red 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+@keyframes pulse-subtle {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
 }
 </style>

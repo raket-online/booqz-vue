@@ -1,0 +1,220 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:wght@500;600&display=swap');
+
+/* BOOQZ Design System - Intentional Minimalism */
+
+:root {
+  /* Primary Color Palette - Rich Terracotta & Warm Neutrals */
+  --color-primary: #B76E4E;
+  --color-primary-light: #D4A088;
+  --color-primary-dark: #8F4A31;
+
+  /* Secondary - Deep Slate Blue */
+  --color-secondary: #2C3E50;
+  --color-secondary-light: #4A5F75;
+  --color-secondary-dark: #1A2633;
+
+  /* Neutrals - Warm, not cold */
+  --color-bg-primary: #FEFEFD;
+  --color-bg-secondary: #F8F6F4;
+  --color-bg-tertiary: #F1EDE9;
+
+  /* Text - Rich charcoal, not pure black */
+  --color-text-primary: #1A1A1A;
+  --color-text-secondary: #5A5A5A;
+  --color-text-tertiary: #9A9A9A;
+
+  /* Accents */
+  --color-accent-green: #6B9080;
+  --color-accent-blue: #8B7E74;
+  --color-accent-purple: #A48B7E;
+
+  /* Semantic colors - sophisticated */
+  --color-error: #C65D5D;
+  --color-warning: #D4A574;
+  --color-success: #7E9B7E;
+
+  /* Subtle shadows */
+  --shadow-xs: 0 1px 2px rgba(26, 26, 26, 0.04);
+  --shadow-sm: 0 2px 4px rgba(26, 26, 26, 0.06);
+  --shadow-md: 0 4px 12px rgba(26, 26, 26, 0.08);
+  --shadow-lg: 0 8px 24px rgba(26, 26, 26, 0.10);
+  --shadow-xl: 0 16px 48px rgba(26, 26, 26, 0.12);
+
+  /* Custom border radius - less rounded, more refined */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+}
+
+/* Global Styles */
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Typography Hierarchy */
+.display {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+}
+
+.heading {
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+
+.body {
+  font-weight: 400;
+  line-height: 1.6;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-bg-tertiary);
+  border-radius: 3px;
+  transition: background 0.2s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-tertiary);
+}
+
+/* Subtle selection */
+::selection {
+  background: var(--color-primary-light);
+  color: white;
+}
+
+/* Focus states - refined */
+*:focus-visible {
+  outline: 2px solid var(--color-primary-light);
+  outline-offset: 2px;
+}
+
+/* Smooth transitions */
+* {
+  transition-property: color, background-color, border-color, box-shadow;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+}
+
+/* Disable transitions for theme changes */
+.no-transition * {
+  transition: none !important;
+}
+
+/* Custom utilities */
+.text-balance {
+  text-wrap: balance;
+}
+
+.text-pretty {
+  text-wrap: pretty;
+}
+
+/* Elevated card effect */
+.elevated {
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow 0.2s ease;
+}
+
+.elevated:hover {
+  box-shadow: var(--shadow-md);
+}
+
+/* Subtle border */
+.border-subtle {
+  border: 1px solid rgba(26, 26, 26, 0.06);
+}
+
+/* Backdrop blur */
+.backdrop-blur-sm {
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+/* Animation keyframes */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
+
+.animate-scale-in {
+  animation: scaleIn 0.2s ease-out;
+}
+
+/* Glass morphism effect */
+.glass {
+  background: rgba(254, 254, 253, 0.8);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(26, 26, 26, 0.04);
+}
+
+/* Gradient text */
+.gradient-text {
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Refined button base */
+.btn-base {
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-base:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+.btn-base:active {
+  transform: translateY(0);
+}

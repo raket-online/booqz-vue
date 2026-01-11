@@ -159,99 +159,184 @@ function handleTitleKeydown(event: KeyboardEvent) {
     cancelEditTitle()
   }
 }
+
+// Type-safe event handlers for buttons
+function handleChapterMouseEnter(event: Event) {
+  const target = event.currentTarget as HTMLElement
+  target.style.borderColor = 'rgba(183, 110, 78, 0.3)'
+  target.style.boxShadow = '0 4px 12px rgba(183, 110, 78, 0.15)'
+}
+
+function handleChapterMouseLeave(event: Event) {
+  const target = event.currentTarget as HTMLElement
+  target.style.borderColor = 'rgba(26, 26, 26, 0.06)'
+  target.style.boxShadow = 'var(--shadow-xs)'
+}
+
+function handleParagraphMouseEnter(event: Event) {
+  const target = event.currentTarget as HTMLElement
+  target.style.borderColor = 'rgba(107, 144, 128, 0.3)'
+  target.style.boxShadow = '0 4px 12px rgba(107, 144, 128, 0.15)'
+}
+
+function handleParagraphMouseLeave(event: Event) {
+  const target = event.currentTarget as HTMLElement
+  target.style.borderColor = 'rgba(26, 26, 26, 0.06)'
+  target.style.boxShadow = 'var(--shadow-xs)'
+}
+
+function handleImageMouseEnter(event: Event) {
+  const target = event.currentTarget as HTMLElement
+  target.style.borderColor = 'rgba(164, 139, 126, 0.3)'
+  target.style.boxShadow = '0 4px 12px rgba(164, 139, 126, 0.15)'
+}
+
+function handleImageMouseLeave(event: Event) {
+  const target = event.currentTarget as HTMLElement
+  target.style.borderColor = 'rgba(26, 26, 26, 0.06)'
+  target.style.boxShadow = 'var(--shadow-xs)'
+}
+
+function handleSaveTitleMouseEnter(event: Event) {
+  const target = event.currentTarget as HTMLElement
+  target.style.background = 'rgba(126, 155, 126, 0.2)'
+}
+
+function handleSaveTitleMouseLeave(event: Event) {
+  const target = event.currentTarget as HTMLElement
+  target.style.background = 'rgba(126, 155, 126, 0.1)'
+}
+
+function handleCancelTitleMouseEnter(event: Event) {
+  const target = event.currentTarget as HTMLElement
+  target.style.background = 'rgba(154, 154, 154, 0.2)'
+}
+
+function handleCancelTitleMouseLeave(event: Event) {
+  const target = event.currentTarget as HTMLElement
+  target.style.background = 'rgba(154, 154, 154, 0.1)'
+}
+
+function handleSaveBookMouseEnter(event: Event) {
+  const target = event.currentTarget as HTMLElement
+  target.style.background = 'rgba(183, 110, 78, 0.1)'
+}
+
+function handleSaveBookMouseLeave(event: Event) {
+  const target = event.currentTarget as HTMLElement
+  target.style.background = 'transparent'
+}
 </script>
 
 <template>
-  <div class="h-full flex flex-col bg-white border-r">
+  <div class="h-full flex flex-col" style="background: #FEFEFD;">
     <!-- Header -->
-    <div class="px-4 py-3 border-b bg-gradient-to-r from-blue-50 to-white">
+    <div class="px-6 py-5 border-b animate-fade-in" style="border-bottom-color: rgba(26, 26, 26, 0.06); background: linear-gradient(180deg, #FEFEFD 0%, #F8F6F4 100%);">
       <div v-if="!isEditingTitle" @click="startEditTitle" class="cursor-pointer group">
-        <h2 class="text-lg font-semibold text-gray-900 group-hover:text-blue-600 transition-colors inline-flex items-center gap-2">
+        <h2 class="text-xl heading inline-flex items-center gap-3" style="color: #1A1A1A;">
           {{ bookStore.book?.title || 'Book' }}
-          <i class="fas fa-pen text-xs text-gray-400 opacity-0 group-hover:opacity-100"></i>
+          <span class="opacity-0 group-hover:opacity-100 transition-all duration-300 transform group-hover:scale-110">
+            <i class="fas fa-pen text-xs" style="color: #B76E4E;"></i>
+          </span>
         </h2>
       </div>
-      <div v-else class="flex items-center gap-2">
+      <div v-else class="flex items-center gap-3">
         <input
           ref="titleInput"
           v-model="bookTitleInput"
           @keydown="handleTitleKeydown"
           @blur="saveBookTitle"
-          class="flex-1 px-2 py-1 text-lg font-semibold border border-blue-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          class="flex-1 px-3 py-2 text-xl heading border rounded-lg focus:outline-none"
+          style="border-color: rgba(183, 110, 78, 0.3); background: #FEFEFD;"
           placeholder="Book title..."
         />
         <button
           @click="saveBookTitle"
-          class="p-1 text-blue-600 hover:text-blue-700"
-          title="Save"
+          @mouseenter="handleSaveTitleMouseEnter"
+          @mouseleave="handleSaveTitleMouseLeave"
+          class="p-2 rounded-lg transition-all duration-200"
+          style="color: #7E9B7E; background: rgba(126, 155, 126, 0.1);"
         >
           <i class="fas fa-check"></i>
         </button>
         <button
           @click="cancelEditTitle"
-          class="p-1 text-gray-400 hover:text-gray-600"
-          title="Cancel"
+          @mouseenter="handleCancelTitleMouseEnter"
+          @mouseleave="handleCancelTitleMouseLeave"
+          class="p-2 rounded-lg transition-all duration-200"
+          style="color: #9A9A9A; background: rgba(154, 154, 154, 0.1);"
         >
           <i class="fas fa-times"></i>
         </button>
       </div>
-      <p class="text-xs text-gray-500 mt-1">{{ bookStore.chapterCount }} chapters • {{ bookStore.wordCount }} words</p>
+      <p class="text-xs mt-2" style="color: #9A9A9A;">{{ bookStore.chapterCount }} chapters • {{ bookStore.wordCount }} words</p>
     </div>
 
     <!-- Add Toolbar -->
-    <div class="px-3 py-2 border-b bg-gradient-to-b from-gray-50 to-white">
+    <div class="px-5 py-4 border-b animate-fade-in" style="border-bottom-color: rgba(26, 26, 26, 0.06); background: #F8F6F4;">
       <!-- Selected Item Indicator -->
-      <div class="mb-2 px-2 py-1.5 rounded-md text-xs flex items-center gap-2 border" :class="hasSelection ? 'bg-blue-50 border-blue-200 text-blue-700' : 'bg-gray-100 border-gray-200 text-gray-500'">
+      <div class="mb-3 px-4 py-2.5 rounded-xl text-xs flex items-center gap-3 transition-all duration-300"
+           :class="hasSelection ? '' : ''"
+           :style="hasSelection ? 'background: rgba(183, 110, 78, 0.08); border: 1px solid rgba(183, 110, 78, 0.2); color: #8F4A31;' : 'background: rgba(26, 26, 26, 0.03); border: 1px solid rgba(26, 26, 26, 0.06); color: #9A9A9A;'">
         <i class="fas fa-crosshairs text-xs"></i>
-        <span class="flex-1 truncate font-medium">{{ hasSelection ? 'Selected:' : 'Nothing selected' }}</span>
+        <span class="flex-1 font-medium">{{ hasSelection ? 'Selected:' : 'Nothing selected' }}</span>
         <span class="truncate max-w-[120px]">{{ selectedItemLabel }}</span>
       </div>
 
       <!-- Add Buttons Row -->
-      <div class="grid grid-cols-3 gap-2">
+      <div class="grid grid-cols-3 gap-3">
         <!-- Add Chapter Button -->
         <button
           @click="addChapter"
-          class="relative flex flex-col items-center justify-center gap-1 p-2 rounded-lg transition-all duration-200 bg-white border border-blue-200 hover:border-blue-400 hover:bg-blue-50 active:scale-95 group"
-          title="Add a new chapter to the book"
+          @mouseenter="handleChapterMouseEnter"
+          @mouseleave="handleChapterMouseLeave"
+          class="group relative flex flex-col items-center justify-center gap-2 p-3 rounded-xl transition-all duration-300 btn-base border-subtle"
+          style="background: #FEFEFD;"
         >
-          <div class="absolute -top-1 -right-1 w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center shadow-sm">
+          <div class="absolute -top-2 -right-2 w-5 h-5 rounded-lg flex items-center justify-center transition-transform duration-300 group-hover:scale-110"
+               style="background: linear-gradient(135deg, #B76E4E 0%, #8F4A31 100%); box-shadow: 0 2px 8px rgba(183, 110, 78, 0.4);">
             <i class="fas fa-plus text-white text-[10px]"></i>
           </div>
-          <i class="fas fa-book text-sm text-blue-600"></i>
-          <span class="text-[10px] font-semibold text-blue-700 leading-tight">Add Chapter</span>
+          <i class="fas fa-book text-lg" style="color: #2C3E50;"></i>
+          <span class="text-[10px] font-semibold tracking-wide" style="color: #8F4A31;">CHAPTER</span>
         </button>
 
         <!-- Add Paragraph Button -->
         <button
           @click="addParagraph"
-          class="relative flex flex-col items-center justify-center gap-1 p-2 rounded-lg transition-all duration-200 bg-white border border-green-200 hover:border-green-400 hover:bg-green-50 active:scale-95 group"
-          title="Add a new paragraph"
+          @mouseenter="handleParagraphMouseEnter"
+          @mouseleave="handleParagraphMouseLeave"
+          class="group relative flex flex-col items-center justify-center gap-2 p-3 rounded-xl transition-all duration-300 btn-base border-subtle"
+          style="background: #FEFEFD;"
         >
-          <div class="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full flex items-center justify-center shadow-sm">
+          <div class="absolute -top-2 -right-2 w-5 h-5 rounded-lg flex items-center justify-center transition-transform duration-300 group-hover:scale-110"
+               style="background: linear-gradient(135deg, #6B9080 0%, #4A6355 100%); box-shadow: 0 2px 8px rgba(107, 144, 128, 0.4);">
             <i class="fas fa-plus text-white text-[10px]"></i>
           </div>
-          <i class="fas fa-paragraph text-sm text-green-600"></i>
-          <span class="text-[10px] font-semibold text-green-700 leading-tight">Add Paragraph</span>
+          <i class="fas fa-paragraph text-lg" style="color: #2C3E50;"></i>
+          <span class="text-[10px] font-semibold tracking-wide" style="color: #4A6355;">PARAGRAPH</span>
         </button>
 
         <!-- Add Image Button -->
         <button
           @click="addImage"
-          class="relative flex flex-col items-center justify-center gap-1 p-2 rounded-lg transition-all duration-200 bg-white border border-purple-200 hover:border-purple-400 hover:bg-purple-50 active:scale-95 group"
-          title="Add an image"
+          @mouseenter="handleImageMouseEnter"
+          @mouseleave="handleImageMouseLeave"
+          class="group relative flex flex-col items-center justify-center gap-2 p-3 rounded-xl transition-all duration-300 btn-base border-subtle"
+          style="background: #FEFEFD;"
         >
-          <div class="absolute -top-1 -right-1 w-4 h-4 bg-purple-500 rounded-full flex items-center justify-center shadow-sm">
+          <div class="absolute -top-2 -right-2 w-5 h-5 rounded-lg flex items-center justify-center transition-transform duration-300 group-hover:scale-110"
+               style="background: linear-gradient(135deg, #A48B7E 0%, #8A6F62 100%); box-shadow: 0 2px 8px rgba(164, 139, 126, 0.4);">
             <i class="fas fa-plus text-white text-[10px]"></i>
           </div>
-          <i class="fas fa-image text-sm text-purple-600"></i>
-          <span class="text-[10px] font-semibold text-purple-700 leading-tight">Add Image</span>
+          <i class="fas fa-image text-lg" style="color: #2C3E50;"></i>
+          <span class="text-[10px] font-semibold tracking-wide" style="color: #8A6F62;">IMAGE</span>
         </button>
       </div>
 
       <!-- Helper Text -->
-      <div class="mt-2 px-2 py-1.5 bg-blue-50 rounded-md border border-blue-100">
-        <p class="text-[10px] text-blue-700 flex items-start gap-1.5 leading-tight">
+      <div class="mt-3 px-4 py-2 rounded-xl" style="background: rgba(183, 110, 78, 0.06); border: 1px solid rgba(183, 110, 78, 0.15);">
+        <p class="text-[10px] flex items-start gap-2 leading-relaxed" style="color: #8F4A31;">
           <i class="fas fa-lightbulb text-[10px] mt-0.5"></i>
           <span v-if="!hasSelection">Click buttons to add, or select an item</span>
           <span v-else>Adding below <strong>{{ selectedItemLabel }}</strong></span>
@@ -260,7 +345,7 @@ function handleTitleKeydown(event: KeyboardEvent) {
     </div>
 
     <!-- Tree Content -->
-    <div class="flex-1 overflow-y-auto p-2">
+    <div class="flex-1 overflow-y-auto p-4 animate-fade-in">
       <div v-if="bookStore.book && bookStore.book.sections.length > 0" class="space-y-1">
         <TreeNode
           v-for="section in bookStore.book.sections"
@@ -274,25 +359,29 @@ function handleTitleKeydown(event: KeyboardEvent) {
           @delete-content="handleDeleteContent"
         />
       </div>
-      <div v-else class="text-center py-8 text-gray-500">
-        <i class="fas fa-book-open text-4xl mb-2 text-gray-300"></i>
-        <p class="text-sm">No chapters yet</p>
-        <p class="text-xs">Click "Chapter" to add one</p>
+      <div v-else class="text-center py-12" style="color: #9A9A9A;">
+        <i class="fas fa-book-open text-5xl mb-3" style="color: #D4A088;"></i>
+        <p class="text-sm font-medium">No chapters yet</p>
+        <p class="text-xs mt-1">Click "Chapter" to add one</p>
       </div>
     </div>
 
     <!-- Footer Actions -->
-    <div class="p-2 border-t text-xs text-gray-500">
-      <div class="flex items-center justify-between">
-        <span v-if="bookStore.lastSaveTime" class="truncate">
-          Saved {{ bookStore.lastSaveTime?.toLocaleTimeString() }}
-        </span>
-        <span v-else>Not saved</span>
+    <div class="px-5 py-3 border-t animate-fade-in" style="border-top-color: rgba(26, 26, 26, 0.06); background: #F8F6F4;">
+      <div class="flex items-center justify-between text-xs" style="color: #9A9A9A;">
+        <div class="flex items-center gap-2">
+          <span v-if="bookStore.lastSaveTime" class="truncate">
+            Saved {{ bookStore.lastSaveTime?.toLocaleTimeString() }}
+          </span>
+          <span v-else>Not saved</span>
+        </div>
         <button
           v-if="bookStore.lastSaveTime"
           @click="bookStore.saveBook()"
-          class="text-blue-600 hover:text-blue-700"
-          title="Save now"
+          @mouseenter="handleSaveBookMouseEnter"
+          @mouseleave="handleSaveBookMouseLeave"
+          class="p-2 rounded-lg transition-all duration-200 hover:scale-105"
+          style="color: #B76E4E;"
         >
           <i class="fas fa-save"></i>
         </button>
