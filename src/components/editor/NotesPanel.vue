@@ -5,13 +5,10 @@ import { useEditorStore } from '@/stores/editor'
 
 const bookStore = useBookStore()
 const editorStore = useEditorStore()
-
 const notes = ref('')
 
-// Get selected item
 const selectedItem = computed(() => {
   if (!editorStore.selectedItemId) return null
-
   if (editorStore.selectedItemType === 'section') {
     return bookStore.findSection(editorStore.selectedItemId)
   } else {
@@ -20,7 +17,6 @@ const selectedItem = computed(() => {
   }
 })
 
-// Watch selection changes and load notes
 watch(() => [editorStore.selectedItemId, editorStore.selectedItemType], () => {
   if (selectedItem.value && selectedItem.value.notes) {
     notes.value = selectedItem.value.notes
@@ -29,16 +25,11 @@ watch(() => [editorStore.selectedItemId, editorStore.selectedItemType], () => {
   }
 }, { immediate: true })
 
-// Auto-save notes with debounce
 let saveTimeout: ReturnType<typeof setTimeout> | null = null
-
 watch(notes, async (newNotes) => {
   if (!editorStore.selectedItemId) return
-
-  // Debounce save
   if (saveTimeout) clearTimeout(saveTimeout)
   saveTimeout = setTimeout(async () => {
-    // Save notes to the appropriate item
     if (editorStore.selectedItemType === 'section') {
       bookStore.updateSectionNotes(editorStore.selectedItemId!, newNotes)
     } else {
@@ -50,7 +41,6 @@ watch(notes, async (newNotes) => {
 
 function clearNotes() {
   notes.value = ''
-  // Also clear in store
   if (editorStore.selectedItemId) {
     if (editorStore.selectedItemType === 'section') {
       bookStore.updateSectionNotes(editorStore.selectedItemId, '')
@@ -64,47 +54,29 @@ function clearNotes() {
 function closePanel() {
   editorStore.toggleNotesPanel()
 }
-
-// Type-safe event handlers
-function handleCloseMouseEnter(event: Event) {
-  const target = event.currentTarget as HTMLElement
-  target.style.background = 'rgba(26, 26, 26, 0.06)'
-}
-
-function handleCloseMouseLeave(event: Event) {
-  const target = event.currentTarget as HTMLElement
-  target.style.background = 'transparent'
-}
-
-function handleClearMouseEnter(event: Event) {
-  const target = event.currentTarget as HTMLElement
-  target.style.background = 'rgba(198, 93, 93, 0.15)'
-}
-
-function handleClearMouseLeave(event: Event) {
-  const target = event.currentTarget as HTMLElement
-  target.style.background = 'rgba(198, 93, 93, 0.1)'
-}
 </script>
 
 <template>
-  <div class="h-full flex flex-col" style="background: var(--color-bg-primary); border-left: 1px solid rgba(26, 26, 26, 0.06);">
+  <div class="h-full flex flex-col" style="background: var(--color-surface); border-left: 1px solid var(--color-elevated);">
     <!-- Header -->
-    <div class="flex items-center justify-between px-4 py-3 border-b animate-fade-in transition-all duration-200"
-         style="border-bottom-color: rgba(26, 26, 26, 0.06); background: linear-gradient(180deg, var(--color-bg-primary) 0%, var(--color-bg-secondary) 100%);">
+    <div class="flex items-center justify-between px-5 py-4 border-b animate-fade-in" style="border-color: var(--color-elevated);">
       <div class="flex items-center gap-2">
-        <i class="fas fa-sticky-note text-base transition-all duration-200" style="color: var(--color-warning);"></i>
-        <h3 class="heading text-sm" style="color: var(--color-text-primary);">Notes</h3>
+        <div class="w-8 h-8 rounded-lg flex items-center justify-center" style="background: var(--color-rose-subtle);">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: var(--color-warning);">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+          </svg>
+        </div>
+        <h3 class="font-heading text-sm" style="color: var(--color-text-primary);">Notes</h3>
       </div>
       <button
         @click="closePanel"
-        @mouseenter="handleCloseMouseEnter"
-        @mouseleave="handleCloseMouseLeave"
-        class="p-1.5 rounded-lg transition-all duration-200 hover:scale-105"
-        style="color: var(--color-text-tertiary); background: transparent;"
+        class="btn btn-icon hover-lift"
+        style="color: var(--color-text-tertiary);"
         title="Collapse panel"
       >
-        <i class="fas fa-chevron-right text-sm"></i>
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+        </svg>
       </button>
     </div>
 
@@ -113,29 +85,31 @@ function handleClearMouseLeave(event: Event) {
       <div v-if="selectedItem" class="h-full animate-fade-in">
         <textarea
           v-model="notes"
-          class="w-full h-full min-h-[300px] p-4 border-0 rounded-none resize-none focus:outline-none focus:ring-0 text-sm body transition-colors duration-200"
-          style="background: var(--color-bg-primary); color: var(--color-text-primary);"
-          placeholder="Add notes for this item..."
+          class="w-full h-full min-h-[300px] p-5 border-0 resize-none focus:outline-none focus:ring-0 text-sm body input"
+          style="background: var(--color-canvas); color: var(--color-text-primary); line-height: 1.6;"
+          placeholder="Add your thoughts, context, or reminders here..."
         ></textarea>
       </div>
-      <div v-else class="h-full flex items-center justify-center text-center p-3 animate-fade-in">
-        <div>
-          <i class="fas fa-sticky-note text-4xl mb-3 transition-all duration-300" style="color: var(--color-warning); opacity: 0.5;"></i>
-          <p class="text-sm body" style="color: var(--color-text-tertiary);">Select an item to add notes</p>
+      <div v-else class="h-full flex items-center justify-center text-center p-6 animate-fade-in">
+        <div class="w-14 h-14 rounded-xl flex items-center justify-center mx-auto mb-3" style="background: var(--color-elevated);">
+          <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: var(--color-text-tertiary);">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+          </svg>
         </div>
+        <p class="text-sm" style="color: var(--color-text-tertiary);">Select an item to add notes</p>
       </div>
     </div>
 
     <!-- Footer -->
-    <div v-if="selectedItem && notes" class="px-4 py-3 border-t animate-fade-in" style="border-top-color: rgba(26, 26, 26, 0.06);">
+    <div v-if="selectedItem && notes" class="p-4 border-t animate-fade-in" style="border-color: var(--color-elevated);">
       <button
         @click="clearNotes"
-        @mouseenter="handleClearMouseEnter"
-        @mouseleave="handleClearMouseLeave"
-        class="w-full px-3 py-1.5 text-sm rounded-lg transition-all duration-200 btn-base hover:scale-105"
-        style="color: var(--color-error); background: rgba(198, 93, 93, 0.1); border: 1px solid rgba(198, 93, 93, 0.2);"
+        class="w-full btn btn-ghost hover-lift"
+        style="color: var(--color-error);"
       >
-        <i class="fas fa-trash-alt mr-2 text-xs"></i>
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+        </svg>
         Clear Notes
       </button>
     </div>

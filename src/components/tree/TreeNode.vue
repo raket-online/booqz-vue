@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, nextTick } from 'vue'
 import type { Section, ContentItem } from '@/types/book'
 import Sortable from 'sortablejs'
+import { useBookStore } from '@/stores/book'
 import { useEditorStore } from '@/stores/editor'
 
 interface Props {
@@ -23,100 +24,87 @@ const emit = defineEmits<{
   'delete-content': [id: number]
 }>()
 
+const bookStore = useBookStore()
 const editorStore = useEditorStore()
 const childrenContainer = ref<HTMLElement | null>(null)
+
+// Section title editing
+const isEditingTitle = ref(false)
+const titleInput = ref<HTMLInputElement | null>(null)
+const editedTitle = ref('')
 
 const isCollapsed = computed(() => props.collapsed)
 const hasChildren = computed(() => props.section.subsections.length > 0 || props.section.contentItems.length > 0)
 
-const paddingLeft = computed(() => `${props.level * 16}px`)
-
-// Check if this section is selected
+// Selection states
 const isSectionSelected = computed(() => {
   return editorStore.selectedItemId === props.section.id && editorStore.selectedItemType === 'section'
 })
 
-// Check if a content item is selected
 const isContentSelected = (itemId: number) => {
   return editorStore.selectedItemId === itemId && editorStore.selectedItemType === 'content'
 }
 
-// Strip HTML tags for preview
+// Text preview helpers
 function stripHtml(html: string): string {
   const div = document.createElement('div')
   div.innerHTML = html
   return div.textContent || div.innerText || ''
 }
 
-function getTextPreview(content: string, maxLength: number = 50): string {
+function getTextPreview(content: string, maxLength: number = 40): string {
   const text = stripHtml(content)
   return text.length > maxLength ? text.substring(0, maxLength) + '...' : text
 }
 
-// Helper function for content item icon colors
-function getContentItemIconStyle(item: ContentItem) {
+// Helper function for content item icon styles
+function getContentIconStyle(item: ContentItem) {
   const isSelected = editorStore.selectedItemId === item.id && editorStore.selectedItemType === 'content'
 
   if (item.type === 'paragraph') {
-    return {
-      color: isSelected ? 'var(--color-accent-green)' : '#6B9080'
-    }
+    return isSelected
+      ? 'background: var(--color-success); color: white;'
+      : 'background: rgba(107, 144, 128, 0.1); color: var(--color-success);'
   } else if (item.type === 'image') {
-    return {
-      color: isSelected ? 'var(--color-accent-purple)' : '#A48B7E'
-    }
+    return isSelected
+      ? 'background: #A48B7E; color: white;'
+      : 'background: rgba(164, 139, 126, 0.1); color: #A48B7E;'
   }
-  return {}
+  return 'background: var(--color-elevated); color: var(--color-text-tertiary);'
 }
 
-// Helper function for content item indicator
-function getContentItemIndicatorStyle(item: ContentItem) {
-  if (item.type === 'paragraph') {
-    return {
-      background: 'linear-gradient(135deg, #6B9080 0%, #4A6355 100%)',
-      boxShadow: '0 0 8px rgba(107, 144, 128, 0.5)'
-    }
-  } else if (item.type === 'image') {
-    return {
-      background: 'linear-gradient(135deg, #A48B7E 0%, #8A6F62 100%)',
-      boxShadow: '0 0 8px rgba(164, 139, 126, 0.5)'
-    }
-  }
-  return {}
+// Section title editing
+function startEditTitle(event: Event) {
+  event.stopPropagation()
+  editedTitle.value = props.section.title
+  isEditingTitle.value = true
+  nextTick(() => {
+    titleInput.value?.focus()
+    titleInput.value?.select()
+  })
 }
 
-// Type-safe event handlers for inline mouse events
-function handleChevronMouseEnter(event: Event) {
-  const target = event.currentTarget as HTMLElement
-  if (target) {
-    target.style.color = 'var(--color-text-secondary)'
+async function saveTitle() {
+  if (editedTitle.value.trim()) {
+    bookStore.updateSectionTitle(props.section.id, editedTitle.value.trim())
+    await bookStore.saveBook()
   }
+  isEditingTitle.value = false
 }
 
-function handleChevronMouseLeave(event: Event) {
-  const target = event.currentTarget as HTMLElement
-  if (target) {
-    target.style.color = 'var(--color-text-tertiary)'
-  }
+function cancelEditTitle() {
+  isEditingTitle.value = false
 }
 
-function handleDeleteMouseEnter(event: Event) {
-  const target = event.currentTarget as HTMLElement
-  if (target) {
-    target.style.color = 'var(--color-error)'
-    target.style.background = 'rgba(198, 93, 93, 0.1)'
+function handleTitleKeydown(event: KeyboardEvent) {
+  if (event.key === 'Enter') {
+    saveTitle()
+  } else if (event.key === 'Escape') {
+    cancelEditTitle()
   }
 }
 
-function handleDeleteMouseLeave(event: Event) {
-  const target = event.currentTarget as HTMLElement
-  if (target) {
-    target.style.color = 'var(--color-text-tertiary)'
-    target.style.background = 'transparent'
-  }
-}
-
-// Initialize drag-drop for children
+// Drag-drop with reordering - Fixed to properly save
 onMounted(() => {
   if (childrenContainer.value) {
     Sortable.create(childrenContainer.value, {
@@ -125,15 +113,24 @@ onMounted(() => {
       animation: 150,
       ghostClass: 'sortable-ghost',
       dragClass: 'sortable-drag',
-
-      onEnd: (evt) => {
+      onEnd: async (evt) => {
         const { item, newIndex, oldIndex } = evt
         const itemId = parseInt(item.dataset.id || '0')
         const itemType = item.dataset.type || 'content'
 
         if (newIndex !== undefined && oldIndex !== undefined && newIndex !== oldIndex) {
-          // TODO: Handle item move in store
-          console.log('Item moved:', itemId, itemType, newIndex, oldIndex)
+          console.log('Item moved:', itemId, itemType, 'from', oldIndex, 'to', newIndex)
+
+          // Find the section in the store to ensure proper reactivity
+          const section = bookStore.findSection(props.section.id)
+          if (section && itemType === 'content') {
+            // Reorder content items
+            const items = [...section.contentItems]
+            const [movedItem] = items.splice(oldIndex!, 1)
+            items.splice(newIndex!, 0, movedItem)
+            section.contentItems = items
+            await bookStore.saveBook()
+          }
         }
       }
     })
@@ -141,121 +138,94 @@ onMounted(() => {
 })
 </script>
 
-<style>
-.sortable-ghost {
-  opacity: 0.4;
-  background-color: var(--color-bg-tertiary);
-}
-
-.sortable-drag {
-  opacity: 0.8;
-}
-
-/* Section selected state */
-.section-selected {
-  background-color: rgba(183, 110, 78, 0.08);
-  border-left: 4px solid var(--color-primary);
-}
-
-/* Section hover state */
-.section-hover {
-  border-left: 4px solid transparent;
-}
-
-.section-hover:hover {
-  background-color: rgba(26, 26, 26, 0.02);
-}
-
-/* Content selected state */
-.content-selected {
-  background-color: rgba(26, 26, 26, 0.03);
-  border-left: 4px solid var(--color-text-tertiary);
-}
-
-/* Content hover state */
-.content-hover {
-  border-left: 4px solid transparent;
-}
-
-.content-hover:hover {
-  background-color: rgba(26, 26, 26, 0.02);
-}
-</style>
-
 <template>
   <div class="tree-node">
-    <!-- Section Header -->
+    <!-- Section Card - Compact -->
     <div
-      class="flex items-center py-2 px-3 cursor-pointer rounded-lg group transition-all duration-200"
+      class="group section-card mb-1 rounded-lg transition-all duration-200 cursor-pointer animate-slide-in"
       :class="{
-        'bg-blue-50 border-l-4 border-blue-500': isSectionSelected,
-        'hover:bg-gray-100 border-l-4 border-transparent': !isSectionSelected
+        'section-selected': isSectionSelected,
+        'section-hover': !isSectionSelected
       }"
-      :style="{ paddingLeft }"
       :data-id="section.id"
       :data-type="'section'"
-      :data-parent-id="section.id"
-      @click.stop="$emit('select-section', section.id)"
+      @click="$emit('select-section', section.id)"
     >
-      <!-- Drag Handle -->
-      <i class="fas fa-grip-vertical drag-handle mr-2 cursor-grab opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-         style="color: rgba(26, 26, 26, 0.2);"></i>
+      <div class="flex items-center gap-2 px-3 py-1.5">
+        <!-- Grip Handle -->
+        <div class="drag-handle flex-shrink-0 cursor-grab" style="color: var(--color-text-tertiary); opacity: 0.6;">
+          <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16"/>
+          </svg>
+        </div>
 
-      <!-- Collapse/Expand Icon -->
-      <span
-        v-if="hasChildren"
-        class="w-4 h-4 mr-2 flex items-center justify-center transition-colors duration-200"
-        style="color: var(--color-text-tertiary);"
-        @click.stop="$emit('toggle-collapse', section.id)"
-        @mouseenter="handleChevronMouseEnter"
-        @mouseleave="handleChevronMouseLeave"
-      >
-        <i :class="isCollapsed ? 'fas fa-chevron-right' : 'fas fa-chevron-down'" class="text-xs"></i>
-      </span>
-      <span v-else class="w-4 h-4 mr-2"></span>
+        <!-- Collapse Toggle -->
+        <button
+          v-if="hasChildren"
+          @click.stop="$emit('toggle-collapse', section.id)"
+          class="flex-shrink-0 w-5 h-5 rounded flex items-center justify-center transition-all duration-150"
+          :style="isSectionSelected ? 'background: rgba(124, 156, 108, 0.15);' : 'background: var(--color-elevated);'"
+        >
+          <svg class="w-3 h-3 transition-transform duration-200" :class="{ 'rotate-90': !isCollapsed }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/>
+          </svg>
+        </button>
+        <div v-else class="w-5"></div>
 
-      <!-- Icon -->
-      <i :class="isSectionSelected ? 'fas fa-book' : 'fas fa-book'"
-         class="mr-2 transition-colors duration-200"
-         :style="isSectionSelected ? { color: 'var(--color-primary-dark)' } : { color: 'var(--color-primary)' }"></i>
+        <!-- Section Icon -->
+        <div class="flex-shrink-0 w-7 h-7 rounded flex items-center justify-center section-icon"
+             :style="isSectionSelected ? 'background: var(--color-accent); color: white;' : 'background: var(--color-rose-subtle); color: var(--color-accent);'">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+          </svg>
+        </div>
 
-      <!-- Title -->
-      <span class="flex-1 truncate text-sm transition-colors duration-200"
-            :class="{ 'font-semibold': isSectionSelected }"
-            :style="isSectionSelected ? { color: 'var(--color-primary-dark)' } : { color: 'var(--color-text-primary)' }">
-        {{ section.title }}
-      </span>
+        <!-- Section Title & Info -->
+        <div class="flex-1 min-w-0">
+          <!-- View Mode -->
+          <h3 v-if="!isEditingTitle"
+              @click="startEditTitle"
+              class="text-sm font-medium truncate transition-colors duration-200 cursor-pointer group"
+              :style="isSectionSelected ? 'color: var(--color-text-primary);' : 'color: var(--color-text-secondary);'">
+            {{ section.title }}
+            <svg class="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200 inline-block ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: var(--color-accent);">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
+            </svg>
+          </h3>
+          <!-- Edit Mode -->
+          <input v-else
+                 ref="titleInput"
+                 v-model="editedTitle"
+                 @keydown="handleTitleKeydown"
+                 @blur="saveTitle"
+                 @click.stop
+                 class="w-full text-sm font-medium px-1.5 py-0.5 rounded border"
+                 style="background: var(--color-surface); border-color: var(--color-accent); color: var(--color-text-primary); outline: none;"
+          />
+        </div>
 
-      <!-- Count Badge -->
-      <span class="text-xs ml-2 transition-colors duration-200"
-            :style="isSectionSelected ? { color: 'var(--color-primary-dark)' } : { color: 'var(--color-text-tertiary)' }">
-        {{ section.contentItems.length }}
-      </span>
+        <!-- Notes Indicator -->
+        <div v-if="section.notes" class="flex-shrink-0">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: var(--color-warning);">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+          </svg>
+        </div>
 
-      <!-- Notes Indicator -->
-      <i v-if="section.notes" class="fas fa-sticky-note ml-2 text-xs transition-all duration-200"
-         style="color: var(--color-warning);"></i>
-
-      <!-- Delete Button -->
-      <button
-        @click.stop="$emit('delete-section', section.id)"
-        @mouseenter="handleDeleteMouseEnter"
-        @mouseleave="handleDeleteMouseLeave"
-        class="ml-2 p-1 opacity-0 group-hover:opacity-100 transition-all duration-200 rounded hover:scale-110"
-        style="color: var(--color-text-tertiary);"
-        title="Delete chapter"
-      >
-        <i class="fas fa-trash text-xs"></i>
-      </button>
-
-      <!-- Active Indicator (small dot) -->
-      <span v-if="isSectionSelected"
-            class="ml-2 w-2 h-2 rounded-full animate-pulse"
-            style="background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%); box-shadow: 0 0 8px rgba(183, 110, 78, 0.5);"></span>
+        <!-- Delete Action (visible on hover) -->
+        <button
+          @click.stop="$emit('delete-section', section.id)"
+          class="delete-btn-section flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-150"
+          title="Delete chapter"
+        >
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+          </svg>
+        </button>
+      </div>
     </div>
 
-    <!-- Children (if not collapsed) -->
-    <div v-if="!isCollapsed" ref="childrenContainer" :data-parent-id="section.id">
+    <!-- Children (when expanded) -->
+    <div v-if="!isCollapsed" ref="childrenContainer" class="ml-2 space-y-0.5">
       <!-- Subsections -->
       <TreeNode
         v-for="subsection in section.subsections"
@@ -274,60 +244,132 @@ onMounted(() => {
       <div
         v-for="item in section.contentItems"
         :key="item.id"
-        class="flex items-center py-1.5 px-3 cursor-pointer rounded group transition-all duration-200"
+        class="content-card rounded transition-all duration-200 cursor-pointer animate-slide-in"
         :class="{
           'content-selected': isContentSelected(item.id),
           'content-hover': !isContentSelected(item.id)
         }"
-        :style="{ paddingLeft: `${(level + 1) * 16 + 16}px` }"
         :data-id="item.id"
         :data-type="item.type"
-        :data-parent-id="section.id"
-        @click.stop="$emit('select-content', item.id)"
+        @click="$emit('select-content', item.id)"
       >
-        <!-- Drag Handle -->
-        <i class="fas fa-grip-vertical drag-handle mr-2 cursor-grab opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-           style="color: rgba(26, 26, 26, 0.2);"></i>
+        <div class="flex items-center gap-2 px-3 py-1">
+          <!-- Grip Handle -->
+          <div class="drag-handle flex-shrink-0 cursor-grab" style="color: var(--color-text-tertiary); opacity: 0.6;">
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16"/>
+            </svg>
+          </div>
 
-        <!-- Icon -->
-        <i
-          :class="{
-            'fas fa-paragraph': item.type === 'paragraph',
-            'fas fa-image': item.type === 'image'
-          }"
-          class="mr-2 transition-colors duration-200"
-          :style="getContentItemIconStyle(item)"
-        ></i>
+          <div class="w-5"></div>
 
-        <!-- Content Preview -->
-        <span class="flex-1 text-sm truncate transition-colors duration-200"
-              :class="{ 'font-medium': isContentSelected(item.id) }"
-              :style="isContentSelected(item.id) ? { color: 'var(--color-text-primary)' } : { color: 'var(--color-text-secondary)' }">
-          <span v-if="item.type === 'paragraph'">{{ getTextPreview(item.content_text) }}</span>
-          <span v-else>{{ (item as any).name || 'Image' }}</span>
-        </span>
+          <!-- Icon -->
+          <div class="flex-shrink-0 w-6 h-6 rounded flex items-center justify-center content-icon"
+               :style="getContentIconStyle(item)">
+            <svg v-if="item.type === 'paragraph'" class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7"/>
+            </svg>
+            <svg v-else class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+            </svg>
+          </div>
 
-        <!-- Notes Indicator -->
-        <i v-if="item.notes" class="fas fa-sticky-note ml-2 text-xs transition-all duration-200"
-           style="color: var(--color-warning);"></i>
+          <!-- Content Preview -->
+          <div class="flex-1 min-w-0">
+            <p class="text-xs truncate transition-colors duration-200 font-body"
+               :style="isContentSelected(item.id) ? 'color: var(--color-text-primary);' : 'color: var(--color-text-secondary);'">
+              <span v-if="item.type === 'paragraph'">{{ getTextPreview(item.content_text) }}</span>
+              <span v-else class="flex items-center gap-1">
+                <span style="color: #A48B7E;">🖼</span>
+                {{ (item as any).name || 'Image' }}
+              </span>
+            </p>
+          </div>
 
-        <!-- Delete Button -->
-        <button
-          @click.stop="$emit('delete-content', item.id)"
-          @mouseenter="handleDeleteMouseEnter"
-          @mouseleave="handleDeleteMouseLeave"
-          class="ml-2 p-1 opacity-0 group-hover:opacity-100 transition-all duration-200 rounded hover:scale-110"
-          style="color: var(--color-text-tertiary);"
-          :title="item.type === 'paragraph' ? 'Delete paragraph' : 'Delete image'"
-        >
-          <i class="fas fa-trash text-xs"></i>
-        </button>
+          <!-- Notes Indicator -->
+          <div v-if="item.notes" class="flex-shrink-0">
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: var(--color-warning);">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+            </svg>
+          </div>
 
-        <!-- Active Indicator (small dot) -->
-        <span v-if="isContentSelected(item.id)"
-              class="ml-2 w-2 h-2 rounded-full animate-pulse"
-              :style="getContentItemIndicatorStyle(item)"></span>
+          <!-- Delete Action -->
+          <button
+            @click.stop="$emit('delete-content', item.id)"
+            class="delete-btn-content flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-150"
+            :title="item.type === 'paragraph' ? 'Delete paragraph' : 'Delete image'"
+          >
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+            </svg>
+          </button>
+        </div>
       </div>
     </div>
   </div>
 </template>
+
+<style scoped>
+.section-selected {
+  background: var(--color-rose-subtle);
+  border: 1px solid rgba(124, 156, 108, 0.3);
+}
+
+.section-hover:hover {
+  background: var(--color-surface);
+  border: 1px solid var(--color-elevated);
+}
+
+.section-hover {
+  background: var(--color-surface);
+  border: 1px solid transparent;
+}
+
+.content-selected {
+  background: var(--color-surface);
+  border: 1px solid rgba(124, 156, 108, 0.2);
+}
+
+.content-hover:hover {
+  background: var(--color-surface);
+  border: 1px solid var(--color-elevated);
+}
+
+.content-hover {
+  background: transparent;
+  border: 1px solid transparent;
+}
+
+/* Drag & Drop Ghost Styles */
+.sortable-ghost {
+  opacity: 0.4;
+  background: var(--color-elevated);
+  border-radius: var(--radius-md);
+}
+
+.sortable-drag {
+  opacity: 0.9;
+  box-shadow: var(--shadow-lg);
+}
+
+/* Delete button styles */
+.delete-btn-section {
+  color: var(--color-text-tertiary);
+  transition: all 0.2s ease;
+}
+
+.delete-btn-section:hover {
+  color: var(--color-error);
+  background: rgba(198, 93, 93, 0.1);
+}
+
+.delete-btn-content {
+  color: var(--color-text-tertiary);
+  transition: all 0.2s ease;
+}
+
+.delete-btn-content:hover {
+  color: var(--color-error);
+  background: rgba(198, 93, 93, 0.1);
+}
+</style>

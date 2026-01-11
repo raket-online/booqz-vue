@@ -181,15 +181,20 @@ export const useBookStore = defineStore('book', () => {
     if (!book.value) throw new Error('No book loaded')
 
     const parent = findSectionRecursive(book.value.sections, parentId)
-    if (!parent || parent.type !== 'chapter') {
-      throw new Error('Parent chapter not found')
+    if (!parent) {
+      throw new Error('Parent section not found')
     }
+
+    // Generate title based on parent type
+    const defaultTitle = parent.type === 'chapter'
+      ? `Section ${parent.subsections.length + 1}`
+      : `Subsection ${parent.subsections.length + 1}`
 
     const subchapter: Section = {
       id: generateId(),
       type: 'subchapter',
       number: parent.subsections.length + 1,
-      title: title || `Section ${parent.subsections.length + 1}`,
+      title: title || defaultTitle,
       notes: '',
       sortOrder: parent.subsections.length,
       contentItems: [],

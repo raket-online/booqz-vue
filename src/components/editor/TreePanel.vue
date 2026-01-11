@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, nextTick } from 'vue'
+import { ref, nextTick } from 'vue'
 import { useBookStore } from '@/stores/book'
 import { useEditorStore } from '@/stores/editor'
 import TreeNode from '@/components/tree/TreeNode.vue'
@@ -28,10 +28,9 @@ function handleToggleCollapse(id: number) {
 }
 
 function handleDeleteSection(id: number) {
-  if (!confirm('Are you sure you want to delete this chapter and all its contents?')) return
+  if (!confirm('Delete this chapter and all its contents?')) return
   bookStore.deleteChapter(id)
   bookStore.saveBook()
-  // Clear selection if it was the deleted item
   if (editorStore.selectedItemId === id) {
     editorStore.selectedItemId = null
     editorStore.selectedItemType = null
@@ -39,10 +38,9 @@ function handleDeleteSection(id: number) {
 }
 
 function handleDeleteContent(id: number) {
-  if (!confirm('Are you sure you want to delete this item?')) return
+  if (!confirm('Delete this item?')) return
   bookStore.deleteItem(id, 'content')
   bookStore.saveBook()
-  // Clear selection if it was the deleted item
   if (editorStore.selectedItemId === id) {
     editorStore.selectedItemId = null
     editorStore.selectedItemType = null
@@ -51,88 +49,85 @@ function handleDeleteContent(id: number) {
 
 function addChapter() {
   const newChapter = bookStore.addChapter()
-  // Select the new chapter
   editorStore.selectSection(newChapter.id)
   bookStore.saveBook()
 }
 
 function addParagraph() {
-  // Find target section: selected section, or last chapter, or first available section
   let targetSectionId = null
 
   if (editorStore.selectedItemId && editorStore.selectedItemType === 'section') {
     targetSectionId = editorStore.selectedItemId
   } else if (bookStore.book && bookStore.book.sections.length > 0) {
-    // Use the last chapter
     const lastChapter = bookStore.book.sections[bookStore.book.sections.length - 1]
     targetSectionId = lastChapter.id
   } else {
-    // No chapters exist, create one first
     const newChapter = bookStore.addChapter()
     targetSectionId = newChapter.id
   }
 
   if (targetSectionId) {
     const newParagraph = bookStore.addParagraph(targetSectionId, '<p>New paragraph</p>')
-    // Select the new paragraph
     editorStore.selectContent(newParagraph.id)
     bookStore.saveBook()
   }
 }
 
 function addImage() {
-  // Find target section: selected section, or last chapter, or first available section
   let targetSectionId = null
 
   if (editorStore.selectedItemId && editorStore.selectedItemType === 'section') {
     targetSectionId = editorStore.selectedItemId
   } else if (bookStore.book && bookStore.book.sections.length > 0) {
-    // Use the last chapter
     const lastChapter = bookStore.book.sections[bookStore.book.sections.length - 1]
     targetSectionId = lastChapter.id
   } else {
-    // No chapters exist, create one first
     const newChapter = bookStore.addChapter()
     targetSectionId = newChapter.id
   }
 
   if (targetSectionId) {
     const newImage = bookStore.addImage(targetSectionId, '', '')
-    // Select the new image
     editorStore.selectContent(newImage.id)
     bookStore.saveBook()
   }
 }
 
-// Computed: Get selected item info for display
-const selectedItemLabel = computed(() => {
-  if (!editorStore.selectedItemId) {
-    return 'Nothing selected'
+function addSubchapter() {
+  let targetSectionId = null
+
+  // Prefer selected section, otherwise use last chapter, or create new chapter
+  if (editorStore.selectedItemId && editorStore.selectedItemType === 'section') {
+    targetSectionId = editorStore.selectedItemId
+  } else if (bookStore.book && bookStore.book.sections.length > 0) {
+    // Use last chapter if nothing selected
+    const lastChapter = bookStore.book.sections[bookStore.book.sections.length - 1]
+    targetSectionId = lastChapter.id
   }
 
-  if (editorStore.selectedItemType === 'section') {
-    const section = bookStore.findSection(editorStore.selectedItemId)
-    return section ? section.title : 'Unknown Section'
-  } else {
-    const result = bookStore.findContentItem(editorStore.selectedItemId)
-    if (result && result.item.type === 'paragraph') {
-      const text = result.item.content_text.replace(/<[^>]*>/g, '')
-      return text.substring(0, 30) + (text.length > 30 ? '...' : '')
-    } else if (result && result.item.type === 'image') {
-      return '🖼 Image'
-    }
-    return 'Selected Item'
+  if (!targetSectionId) {
+    // Create a new chapter first if no sections exist
+    const newChapter = bookStore.addChapter()
+    targetSectionId = newChapter.id
+    bookStore.saveBook()
   }
-})
 
-const hasSelection = computed(() => !!editorStore.selectedItemId)
+  try {
+    const newSubchapter = bookStore.addSubchapter(targetSectionId)
+    editorStore.selectSection(newSubchapter.id)
+    bookStore.saveBook()
+  } catch (error: any) {
+    console.error('Failed to add subchapter:', error)
+    alert('Could not add section: ' + (error.message || 'Unknown error'))
+  }
+}
 
 // Book title editing
 const isEditingTitle = ref(false)
 const bookTitleInput = ref('')
 
 function startEditTitle() {
-  bookTitleInput.value = bookStore.book?.title || ''
+  bookTitleInput.value = bookStore.book?.title || 'Untitled Book'
   isEditingTitle.value = true
   nextTick(() => {
     titleInput.value?.focus()
@@ -159,194 +154,53 @@ function handleTitleKeydown(event: KeyboardEvent) {
     cancelEditTitle()
   }
 }
-
-// Type-safe event handlers for buttons
-function handleChapterMouseEnter(event: Event) {
-  const target = event.currentTarget as HTMLElement
-  target.style.borderColor = 'rgba(183, 110, 78, 0.3)'
-  target.style.boxShadow = '0 4px 12px rgba(183, 110, 78, 0.15)'
-}
-
-function handleChapterMouseLeave(event: Event) {
-  const target = event.currentTarget as HTMLElement
-  target.style.borderColor = 'rgba(26, 26, 26, 0.06)'
-  target.style.boxShadow = 'var(--shadow-xs)'
-}
-
-function handleParagraphMouseEnter(event: Event) {
-  const target = event.currentTarget as HTMLElement
-  target.style.borderColor = 'rgba(107, 144, 128, 0.3)'
-  target.style.boxShadow = '0 4px 12px rgba(107, 144, 128, 0.15)'
-}
-
-function handleParagraphMouseLeave(event: Event) {
-  const target = event.currentTarget as HTMLElement
-  target.style.borderColor = 'rgba(26, 26, 26, 0.06)'
-  target.style.boxShadow = 'var(--shadow-xs)'
-}
-
-function handleImageMouseEnter(event: Event) {
-  const target = event.currentTarget as HTMLElement
-  target.style.borderColor = 'rgba(164, 139, 126, 0.3)'
-  target.style.boxShadow = '0 4px 12px rgba(164, 139, 126, 0.15)'
-}
-
-function handleImageMouseLeave(event: Event) {
-  const target = event.currentTarget as HTMLElement
-  target.style.borderColor = 'rgba(26, 26, 26, 0.06)'
-  target.style.boxShadow = 'var(--shadow-xs)'
-}
-
-function handleSaveTitleMouseEnter(event: Event) {
-  const target = event.currentTarget as HTMLElement
-  target.style.background = 'rgba(126, 155, 126, 0.2)'
-}
-
-function handleSaveTitleMouseLeave(event: Event) {
-  const target = event.currentTarget as HTMLElement
-  target.style.background = 'rgba(126, 155, 126, 0.1)'
-}
-
-function handleCancelTitleMouseEnter(event: Event) {
-  const target = event.currentTarget as HTMLElement
-  target.style.background = 'rgba(154, 154, 154, 0.2)'
-}
-
-function handleCancelTitleMouseLeave(event: Event) {
-  const target = event.currentTarget as HTMLElement
-  target.style.background = 'rgba(154, 154, 154, 0.1)'
-}
-
-function handleSaveBookMouseEnter(event: Event) {
-  const target = event.currentTarget as HTMLElement
-  target.style.background = 'rgba(183, 110, 78, 0.1)'
-}
-
-function handleSaveBookMouseLeave(event: Event) {
-  const target = event.currentTarget as HTMLElement
-  target.style.background = 'transparent'
-}
 </script>
 
 <template>
-  <div class="h-full flex flex-col" style="background: #FEFEFD;">
-    <!-- Header -->
-    <div class="px-6 py-5 border-b animate-fade-in" style="border-bottom-color: rgba(26, 26, 26, 0.06); background: linear-gradient(180deg, #FEFEFD 0%, #F8F6F4 100%);">
-      <div v-if="!isEditingTitle" @click="startEditTitle" class="cursor-pointer group">
-        <h2 class="text-xl heading inline-flex items-center gap-3" style="color: #1A1A1A;">
-          {{ bookStore.book?.title || 'Book' }}
-          <span class="opacity-0 group-hover:opacity-100 transition-all duration-300 transform group-hover:scale-110">
-            <i class="fas fa-pen text-xs" style="color: #B76E4E;"></i>
-          </span>
-        </h2>
-      </div>
-      <div v-else class="flex items-center gap-3">
-        <input
-          ref="titleInput"
-          v-model="bookTitleInput"
-          @keydown="handleTitleKeydown"
-          @blur="saveBookTitle"
-          class="flex-1 px-3 py-2 text-xl heading border rounded-lg focus:outline-none"
-          style="border-color: rgba(183, 110, 78, 0.3); background: #FEFEFD;"
-          placeholder="Book title..."
-        />
-        <button
-          @click="saveBookTitle"
-          @mouseenter="handleSaveTitleMouseEnter"
-          @mouseleave="handleSaveTitleMouseLeave"
-          class="p-2 rounded-lg transition-all duration-200"
-          style="color: #7E9B7E; background: rgba(126, 155, 126, 0.1);"
-        >
-          <i class="fas fa-check"></i>
-        </button>
-        <button
-          @click="cancelEditTitle"
-          @mouseenter="handleCancelTitleMouseEnter"
-          @mouseleave="handleCancelTitleMouseLeave"
-          class="p-2 rounded-lg transition-all duration-200"
-          style="color: #9A9A9A; background: rgba(154, 154, 154, 0.1);"
-        >
-          <i class="fas fa-times"></i>
-        </button>
-      </div>
-      <p class="text-xs mt-2" style="color: #9A9A9A;">{{ bookStore.chapterCount }} chapters • {{ bookStore.wordCount }} words</p>
-    </div>
-
-    <!-- Add Toolbar -->
-    <div class="px-5 py-4 border-b animate-fade-in" style="border-bottom-color: rgba(26, 26, 26, 0.06); background: #F8F6F4;">
-      <!-- Selected Item Indicator -->
-      <div class="mb-3 px-4 py-2.5 rounded-xl text-xs flex items-center gap-3 transition-all duration-300"
-           :class="hasSelection ? '' : ''"
-           :style="hasSelection ? 'background: rgba(183, 110, 78, 0.08); border: 1px solid rgba(183, 110, 78, 0.2); color: #8F4A31;' : 'background: rgba(26, 26, 26, 0.03); border: 1px solid rgba(26, 26, 26, 0.06); color: #9A9A9A;'">
-        <i class="fas fa-crosshairs text-xs"></i>
-        <span class="flex-1 font-medium">{{ hasSelection ? 'Selected:' : 'Nothing selected' }}</span>
-        <span class="truncate max-w-[120px]">{{ selectedItemLabel }}</span>
-      </div>
-
-      <!-- Add Buttons Row -->
-      <div class="grid grid-cols-3 gap-3">
-        <!-- Add Chapter Button -->
-        <button
-          @click="addChapter"
-          @mouseenter="handleChapterMouseEnter"
-          @mouseleave="handleChapterMouseLeave"
-          class="group relative flex flex-col items-center justify-center gap-2 p-3 rounded-xl transition-all duration-300 btn-base border-subtle"
-          style="background: #FEFEFD;"
-        >
-          <div class="absolute -top-2 -right-2 w-5 h-5 rounded-lg flex items-center justify-center transition-transform duration-300 group-hover:scale-110"
-               style="background: linear-gradient(135deg, #B76E4E 0%, #8F4A31 100%); box-shadow: 0 2px 8px rgba(183, 110, 78, 0.4);">
-            <i class="fas fa-plus text-white text-[10px]"></i>
+  <div class="h-full flex flex-col" style="background: var(--color-canvas);">
+    <!-- Compact Header -->
+    <div class="px-4 py-3 border-b animate-fade-in" style="border-color: var(--color-elevated); background: var(--color-surface);">
+      <!-- Book Title with Inline Stats -->
+      <div class="flex items-center gap-2">
+        <div v-if="!isEditingTitle" @click="startEditTitle" class="flex-1 cursor-pointer group">
+          <div class="flex items-center gap-2">
+            <h1 class="font-display text-base font-semibold" style="color: var(--color-text-primary);">
+              {{ bookStore.book?.title || 'Untitled Book' }}
+            </h1>
+            <span class="text-xs px-1.5 py-0.5 rounded" style="background: var(--color-elevated); color: var(--color-text-tertiary);">
+              {{ bookStore.chapterCount }} chapters · {{ bookStore.wordCount }} words
+            </span>
           </div>
-          <i class="fas fa-book text-lg" style="color: #2C3E50;"></i>
-          <span class="text-[10px] font-semibold tracking-wide" style="color: #8F4A31;">CHAPTER</span>
-        </button>
-
-        <!-- Add Paragraph Button -->
-        <button
-          @click="addParagraph"
-          @mouseenter="handleParagraphMouseEnter"
-          @mouseleave="handleParagraphMouseLeave"
-          class="group relative flex flex-col items-center justify-center gap-2 p-3 rounded-xl transition-all duration-300 btn-base border-subtle"
-          style="background: #FEFEFD;"
-        >
-          <div class="absolute -top-2 -right-2 w-5 h-5 rounded-lg flex items-center justify-center transition-transform duration-300 group-hover:scale-110"
-               style="background: linear-gradient(135deg, #6B9080 0%, #4A6355 100%); box-shadow: 0 2px 8px rgba(107, 144, 128, 0.4);">
-            <i class="fas fa-plus text-white text-[10px]"></i>
-          </div>
-          <i class="fas fa-paragraph text-lg" style="color: #2C3E50;"></i>
-          <span class="text-[10px] font-semibold tracking-wide" style="color: #4A6355;">PARAGRAPH</span>
-        </button>
-
-        <!-- Add Image Button -->
-        <button
-          @click="addImage"
-          @mouseenter="handleImageMouseEnter"
-          @mouseleave="handleImageMouseLeave"
-          class="group relative flex flex-col items-center justify-center gap-2 p-3 rounded-xl transition-all duration-300 btn-base border-subtle"
-          style="background: #FEFEFD;"
-        >
-          <div class="absolute -top-2 -right-2 w-5 h-5 rounded-lg flex items-center justify-center transition-transform duration-300 group-hover:scale-110"
-               style="background: linear-gradient(135deg, #A48B7E 0%, #8A6F62 100%); box-shadow: 0 2px 8px rgba(164, 139, 126, 0.4);">
-            <i class="fas fa-plus text-white text-[10px]"></i>
-          </div>
-          <i class="fas fa-image text-lg" style="color: #2C3E50;"></i>
-          <span class="text-[10px] font-semibold tracking-wide" style="color: #8A6F62;">IMAGE</span>
-        </button>
-      </div>
-
-      <!-- Helper Text -->
-      <div class="mt-3 px-4 py-2 rounded-xl" style="background: rgba(183, 110, 78, 0.06); border: 1px solid rgba(183, 110, 78, 0.15);">
-        <p class="text-[10px] flex items-start gap-2 leading-relaxed" style="color: #8F4A31;">
-          <i class="fas fa-lightbulb text-[10px] mt-0.5"></i>
-          <span v-if="!hasSelection">Click buttons to add, or select an item</span>
-          <span v-else>Adding below <strong>{{ selectedItemLabel }}</strong></span>
-        </p>
+          <svg class="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200 inline-block ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: var(--color-accent);">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
+          </svg>
+        </div>
+        <div v-else class="flex-1 flex items-center gap-2">
+          <input
+            ref="titleInput"
+            v-model="bookTitleInput"
+            @keydown="handleTitleKeydown"
+            @blur="saveBookTitle"
+            class="flex-1 px-2 py-1 font-display text-sm font-semibold input"
+            placeholder="Book title..."
+          />
+          <button @click="saveBookTitle" class="btn-icon-compact" style="color: var(--color-accent);">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+            </svg>
+          </button>
+          <button @click="cancelEditTitle" class="btn-icon-compact" style="color: var(--color-text-tertiary);">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
       </div>
     </div>
 
-    <!-- Tree Content -->
-    <div class="flex-1 overflow-y-auto p-4 animate-fade-in">
-      <div v-if="bookStore.book && bookStore.book.sections.length > 0" class="space-y-1">
+    <!-- Document Tree -->
+    <div class="flex-1 overflow-y-auto px-3 py-2">
+      <div v-if="bookStore.book && bookStore.book.sections.length > 0" class="space-y-1 animate-fade-in">
         <TreeNode
           v-for="section in bookStore.book.sections"
           :key="section.id"
@@ -359,33 +213,125 @@ function handleSaveBookMouseLeave(event: Event) {
           @delete-content="handleDeleteContent"
         />
       </div>
-      <div v-else class="text-center py-12" style="color: #9A9A9A;">
-        <i class="fas fa-book-open text-5xl mb-3" style="color: #D4A088;"></i>
-        <p class="text-sm font-medium">No chapters yet</p>
-        <p class="text-xs mt-1">Click "Chapter" to add one</p>
+      <div v-else class="h-full flex flex-col items-center justify-center text-center py-8 animate-fade-in">
+        <div class="w-12 h-12 rounded-xl flex items-center justify-center mb-3" style="background: var(--color-elevated);">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: var(--color-accent);">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+          </svg>
+        </div>
+        <h3 class="font-display text-sm mb-1" style="color: var(--color-text-primary);">Start your book</h3>
+        <p class="text-xs max-w-xs mx-auto" style="color: var(--color-text-tertiary);">Create your first chapter to begin writing.</p>
       </div>
     </div>
 
-    <!-- Footer Actions -->
-    <div class="px-5 py-3 border-t animate-fade-in" style="border-top-color: rgba(26, 26, 26, 0.06); background: #F8F6F4;">
-      <div class="flex items-center justify-between text-xs" style="color: #9A9A9A;">
-        <div class="flex items-center gap-2">
-          <span v-if="bookStore.lastSaveTime" class="truncate">
-            Saved {{ bookStore.lastSaveTime?.toLocaleTimeString() }}
-          </span>
-          <span v-else>Not saved</span>
+    <!-- Footer with Action Buttons & Save Status - Sticky -->
+    <div class="sticky bottom-0 border-t animate-fade-in" style="border-color: var(--color-elevated); background: var(--color-surface);">
+      <!-- Action Buttons Grid - 4 Buttons -->
+      <div class="px-3 py-2 border-b" style="border-color: var(--color-elevated);">
+        <div class="grid grid-cols-4 gap-2">
+          <!-- Chapter Button -->
+          <button
+            @click="addChapter"
+            class="group relative flex flex-col items-center justify-center gap-1 px-2 py-2 rounded-lg compact-btn"
+          >
+            <div class="w-6 h-6 rounded flex items-center justify-center transition-all duration-200 group-hover:scale-105"
+                 style="background: var(--color-rose-subtle); color: var(--color-accent);">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+              </svg>
+            </div>
+            <p class="text-[10px] font-medium" style="color: var(--color-accent-dark);">Chapter</p>
+          </button>
+
+          <!-- Subchapter Button -->
+          <button
+            @click="addSubchapter"
+            class="group relative flex flex-col items-center justify-center gap-1 px-2 py-2 rounded-lg compact-btn"
+          >
+            <div class="w-6 h-6 rounded flex items-center justify-center transition-all duration-200 group-hover:scale-105"
+                 style="background: rgba(124, 156, 108, 0.15); color: var(--color-accent);">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253 M9 5l7 7-7 7"/>
+              </svg>
+            </div>
+            <p class="text-[10px] font-medium" style="color: var(--color-accent);">Section</p>
+          </button>
+
+          <!-- Paragraph Button -->
+          <button
+            @click="addParagraph"
+            class="group relative flex flex-col items-center justify-center gap-1 px-2 py-2 rounded-lg compact-btn"
+          >
+            <div class="w-6 h-6 rounded flex items-center justify-center transition-all duration-200 group-hover:scale-105"
+                 style="background: rgba(107, 144, 128, 0.1); color: var(--color-success);">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7"/>
+              </svg>
+            </div>
+            <p class="text-[10px] font-medium" style="color: var(--color-success);">Text</p>
+          </button>
+
+          <!-- Image Button -->
+          <button
+            @click="addImage"
+            class="group relative flex flex-col items-center justify-center gap-1 px-2 py-2 rounded-lg compact-btn"
+          >
+            <div class="w-6 h-6 rounded flex items-center justify-center transition-all duration-200 group-hover:scale-105"
+                 style="background: rgba(164, 139, 126, 0.1); color: #A48B7E;">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+              </svg>
+            </div>
+            <p class="text-[10px] font-medium" style="color: #A48B7E;">Image</p>
+          </button>
         </div>
-        <button
-          v-if="bookStore.lastSaveTime"
-          @click="bookStore.saveBook()"
-          @mouseenter="handleSaveBookMouseEnter"
-          @mouseleave="handleSaveBookMouseLeave"
-          class="p-2 rounded-lg transition-all duration-200 hover:scale-105"
-          style="color: #B76E4E;"
-        >
-          <i class="fas fa-save"></i>
-        </button>
+      </div>
+
+      <!-- Save Status -->
+      <div class="px-3 py-2">
+        <div class="flex items-center justify-between text-xs">
+          <div class="flex items-center gap-1.5" style="color: var(--color-text-tertiary);">
+            <span v-if="bookStore.lastSaveTime" class="flex items-center gap-1">
+              <span class="w-1 h-1 rounded-full" style="background: var(--color-success);"></span>
+              <span class="text-[10px]">Saved {{ bookStore.lastSaveTime?.toLocaleTimeString() }}</span>
+            </span>
+            <span v-else class="flex items-center gap-1">
+              <span class="w-1 h-1 rounded-full" style="background: var(--color-warning);"></span>
+              <span class="text-[10px]">Unsaved</span>
+            </span>
+          </div>
+          <button
+            v-if="bookStore.lastSaveTime"
+            @click="bookStore.saveBook()"
+            class="btn-icon-compact"
+            style="color: var(--color-accent);"
+            title="Save now"
+          >
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/>
+            </svg>
+          </button>
+        </div>
       </div>
     </div>
   </div>
 </template>
+
+<style scoped>
+.btn-icon-compact {
+  @apply w-7 h-7 flex items-center justify-center rounded-lg transition-all duration-200;
+}
+
+.btn-icon-compact:hover {
+  background: var(--color-elevated);
+}
+
+.compact-btn {
+  transition: all 0.2s ease;
+}
+
+.compact-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-xs);
+}
+</style>

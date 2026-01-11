@@ -13,7 +13,7 @@ interface Emits {
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  placeholder: 'Start writing...',
+  placeholder: 'Begin writing your masterpiece...',
   disabled: false
 })
 
@@ -23,14 +23,12 @@ const editorElement = ref<HTMLElement>()
 const { isIdle, isConnecting, isRecording, hasError, setInsertTextCallback, toggleRecording } = useSpeech()
 let pellInstance: any = null
 
-// Load Pell from CDN
 function loadPell(): Promise<any> {
   return new Promise((resolve, reject) => {
     if ((window as any).pell) {
       resolve((window as any).pell)
       return
     }
-
     const script = document.createElement('script')
     script.src = 'https://unpkg.com/pell@1.0.6/dist/pell.min.js'
     script.onload = () => resolve((window as any).pell)
@@ -41,14 +39,11 @@ function loadPell(): Promise<any> {
 
 onMounted(async () => {
   if (!editorElement.value) return
-
   const Pell = await loadPell()
 
   pellInstance = Pell.init({
     element: editorElement.value,
-    onChange: (html: string) => {
-      emit('update:modelValue', html)
-    },
+    onChange: (html: string) => emit('update:modelValue', html),
     defaultParagraphSeparator: 'p',
     styleWithCSS: true,
     classes: {
@@ -61,36 +56,22 @@ onMounted(async () => {
       'bold',
       'italic',
       'underline',
-      {
-        name: 'olist',
-        icon: '<span style="font-size:16px">1.</span>'
-      },
-      {
-        name: 'ulist',
-        icon: '<span style="font-size:16px">•</span>'
-      },
+      { name: 'olist', icon: '<span style="font-size:15px">1.</span>' },
+      { name: 'ulist', icon: '<span style="font-size:15px">•</span>' },
       'link',
-      {
-        name: 'removeFormat',
-        icon: '✕'
-      }
+      { name: 'removeFormat', icon: '✕' }
     ]
   })
 
-  // Set initial content
   if (pellInstance && props.modelValue) {
     pellInstance.content.innerHTML = props.modelValue
   }
-
-  // Apply disabled state
   if (pellInstance && props.disabled) {
     pellInstance.content.contentEditable = 'false'
   }
 
-  // Setup speech-to-text insertion
   setInsertTextCallback((text: string) => {
     if (pellInstance && pellInstance.content) {
-      // Insert text at cursor position
       const selection = window.getSelection()
       if (selection && selection.rangeCount > 0) {
         const range = selection.getRangeAt(0)
@@ -101,24 +82,19 @@ onMounted(async () => {
         selection.removeAllRanges()
         selection.addRange(range)
       } else {
-        // No cursor, append to end
         pellInstance.content.innerHTML += text
       }
-
-      // Trigger change event
       pellInstance.content.dispatchEvent(new Event('input', { bubbles: true }))
     }
   })
 })
 
-// Watch for external content changes
 watch(() => props.modelValue, (newVal) => {
   if (pellInstance && pellInstance.content.innerHTML !== newVal) {
     pellInstance.content.innerHTML = newVal
   }
 })
 
-// Watch for disabled state changes
 watch(() => props.disabled, (disabled) => {
   if (pellInstance) {
     pellInstance.content.contentEditable = !disabled
@@ -126,65 +102,57 @@ watch(() => props.disabled, (disabled) => {
 })
 
 onBeforeUnmount(() => {
-  if (pellInstance) {
-    pellInstance = null
-  }
+  pellInstance = null
 })
 
-// Expose methods
 defineExpose({
-  focus: () => {
-    pellInstance?.content?.focus()
-  },
-  getContent: () => {
-    return pellInstance?.content?.innerHTML || ''
-  },
-  setContent: (html: string) => {
-    if (pellInstance) {
-      pellInstance.content.innerHTML = html
-    }
-  },
-  execCommand: (command: string, value?: string) => {
-    if (pellInstance) {
-      pellInstance.exec(command, value)
-    }
-  }
+  focus: () => pellInstance?.content?.focus(),
+  getContent: () => pellInstance?.content?.innerHTML || '',
+  setContent: (html: string) => { if (pellInstance) pellInstance.content.innerHTML = html },
+  execCommand: (command: string, value?: string) => { if (pellInstance) pellInstance.exec(command, value) }
 })
 </script>
 
 <template>
   <div class="pell-editor-wrapper h-full flex flex-col">
-    <!-- Microphone Button -->
-    <div class="flex items-center gap-2 px-3 py-2 border-b transition-all duration-200"
-         style="border-bottom-color: rgba(26, 26, 26, 0.06); background: var(--color-bg-secondary);">
-      <button
-        @click="toggleRecording"
-        :disabled="disabled"
-        class="mic-button relative p-2 rounded-lg transition-all duration-200 hover:scale-105 disabled:hover:scale-100 disabled:cursor-not-allowed"
-        :class="{
-          'mic-idle': isIdle,
-          'mic-connecting': isConnecting,
-          'mic-recording': isRecording,
-          'mic-error': hasError
-        }"
-        :title="isRecording ? 'Stop recording (Ctrl+M)' : 'Start dictation (Ctrl+M)'"
-      >
-        <i class="fas fa-microphone text-lg"></i>
-        <span v-if="isRecording" class="absolute -top-1 -right-1 flex h-3 w-3">
-          <span class="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75"></span>
-          <span class="relative inline-flex rounded-full h-3 w-3"></span>
+    <!-- Dictation Bar -->
+    <div class="flex items-center justify-between px-4 py-2.5 border-b animate-slide-up" style="border-color: var(--color-elevated); background: var(--color-surface);">
+      <div class="flex items-center gap-3">
+        <!-- Microphone Button -->
+        <button
+          @click="toggleRecording"
+          :disabled="disabled"
+          class="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 hover:scale-105"
+          :class="{
+            'mic-idle': isIdle,
+            'mic-connecting': isConnecting,
+            'mic-recording': isRecording,
+            'mic-error': hasError
+          }"
+          :title="isRecording ? 'Stop recording (Ctrl+M)' : 'Start dictation (Ctrl+M)'"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/>
+          </svg>
+          <span v-if="isRecording" class="flex h-2 w-2">
+            <span class="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75" style="background: white;"></span>
+            <span class="relative inline-flex rounded-full h-2 w-2" style="background: white;"></span>
+          </span>
+        </button>
+
+        <!-- Status -->
+        <span class="text-xs" style="color: var(--color-text-tertiary);">
+          {{ isIdle ? 'Click to dictate' : isConnecting ? 'Connecting...' : isRecording ? 'Recording...' : 'Error' }}
         </span>
-      </button>
-      <span class="text-xs transition-colors duration-200" style="color: var(--color-text-tertiary);">
-        {{ isIdle ? 'Click to dictate' : isConnecting ? 'Connecting...' : isRecording ? 'Recording...' : 'Error' }}
-      </span>
+      </div>
+
+      <!-- Word Count (optional enhancement) -->
+      <div class="text-xs font-mono" style="color: var(--color-text-tertiary);">
+        {{ props.modelValue.replace(/<[^>]*>/g, '').split(/\s+/).filter(w => w).length }} words
+      </div>
     </div>
 
-    <div
-      ref="editorElement"
-      class="pell flex-1"
-      :class="{ 'pell-disabled': disabled }"
-    ></div>
+    <div ref="editorElement" class="pell flex-1" :class="{ 'pell-disabled': disabled }"></div>
   </div>
 </template>
 
@@ -195,20 +163,25 @@ defineExpose({
 
 .pell {
   @apply rounded-lg flex flex-col;
-  background: var(--color-bg-primary);
-  border: 1px solid rgba(26, 26, 26, 0.06);
+  background: var(--color-surface);
+  border: 1px solid var(--color-elevated);
   overflow: hidden;
 }
 
 .pell-content {
-  @apply p-4 flex-1 outline-none overflow-y-auto;
+  @apply p-8 flex-1 outline-none overflow-y-auto;
+  font-family: var(--font-sans);
+  font-size: 1.05rem;
+  line-height: 1.7;
   color: var(--color-text-primary);
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-  line-height: 1.6;
 }
 
 .pell-content:focus {
   @apply outline-none;
+}
+
+.pell-content p {
+  @apply mb-3;
 }
 
 .pell-disabled {
@@ -216,89 +189,67 @@ defineExpose({
 }
 
 :deep(.pell-actionbar) {
-  @apply flex flex-wrap gap-1 p-2;
-  border-bottom: 1px solid rgba(26, 26, 26, 0.06);
-  background: var(--color-bg-secondary);
+  @apply flex flex-wrap gap-1 p-3 border-b;
+  border-color: var(--color-elevated);
+  background: var(--color-canvas);
 }
 
 :deep(.pell-button) {
-  @apply px-3 py-1.5 rounded transition-all duration-150 text-sm font-medium;
+  @apply px-3 py-1.5 rounded-lg transition-all duration-150 text-sm;
   color: var(--color-text-secondary);
+  font-weight: 500;
 }
 
 :deep(.pell-button:hover) {
   color: var(--color-text-primary);
-  background: rgba(26, 26, 26, 0.06);
+  background: var(--color-elevated);
 }
 
 :deep(.pell-button:focus) {
-  outline: 2px solid var(--color-primary-light);
+  outline: 2px solid var(--color-accent);
   outline-offset: 2px;
 }
 
 :deep(.pell-button-selected) {
-  background: var(--color-bg-tertiary);
+  background: var(--color-elevated);
   color: var(--color-text-primary);
-}
-
-:deep(.pell-content p) {
-  @apply mb-2;
-}
-
-:deep(.pell-content ul),
-:deep(.pell-content ol) {
-  @apply ml-6 mb-2;
-}
-
-:deep(.pell-content ul) {
-  @apply list-disc;
-}
-
-:deep(.pell-content ol) {
-  @apply list-decimal;
+  font-weight: 600;
 }
 
 :deep(.pell-content a) {
-  color: var(--color-primary);
+  color: var(--color-accent);
   text-decoration: underline;
 }
 
 :deep(.pell-content a:hover) {
-  color: var(--color-primary-dark);
+  color: var(--color-accent-dark);
 }
 
 :deep(.pell-content img) {
-  @apply max-w-full h-auto rounded;
+  @apply max-w-full h-auto rounded-lg my-3;
 }
 
 /* Microphone states */
 .mic-idle {
-  background: var(--color-bg-tertiary);
+  background: var(--color-elevated);
   color: var(--color-text-secondary);
 }
 
 .mic-idle:hover {
-  background: var(--color-bg-secondary);
+  background: rgba(124, 156, 108, 0.1);
+  color: var(--color-accent);
 }
 
 .mic-connecting {
   background: rgba(212, 165, 116, 0.15);
   color: var(--color-warning);
-  animation: pulse-subtle 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  animation: pulse-subtle 1.5s infinite;
 }
 
 .mic-recording {
   background: var(--color-error);
   color: white;
-  animation: pulse-recording 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-}
-
-.mic-recording .animate-ping {
-  background: rgba(255, 255, 255, 0.4);
-}
-
-.mic-recording .relative inline-flex {
-  background: white;
+  animation: pulse-recording 1.5s infinite;
 }
 
 .mic-error {
@@ -306,22 +257,13 @@ defineExpose({
   color: var(--color-error);
 }
 
-/* Custom animations */
 @keyframes pulse-recording {
-  0%, 100% {
-    box-shadow: 0 0 0 0 rgba(198, 93, 93, 0.7);
-  }
-  50% {
-    box-shadow: 0 0 0 10px rgba(198, 93, 93, 0);
-  }
+  0%, 100% { box-shadow: 0 0 0 0 rgba(198, 93, 93, 0.7); }
+  50% { box-shadow: 0 0 0 10px rgba(198, 93, 93, 0); }
 }
 
 @keyframes pulse-subtle {
-  0%, 100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.7;
-  }
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
 }
 </style>
