@@ -18,6 +18,12 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/',
     name: 'home',
+    component: () => import('@/pages/Editor.vue'),
+    meta: { layout: 'none', requiresAuth: true }
+  },
+  {
+    path: '/test',
+    name: 'test',
     component: () => import('@/pages/Home.vue'),
     meta: { layout: 'app', requiresAuth: true }
   }
