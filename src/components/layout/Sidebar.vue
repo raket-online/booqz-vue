@@ -27,7 +27,7 @@ async function handleSignOut() {
 
   <aside
     :class="[
-      'h-screen flex flex-col border-r transition-all duration-300 ease-spring',
+      'h-full flex flex-col border-r transition-all duration-300 ease-spring',
       sidebarStore.isCollapsed ? 'w-0 opacity-0 overflow-hidden' : 'w-72 opacity-100'
     ]"
     style="background: var(--color-surface); border-color: var(--color-elevated);"

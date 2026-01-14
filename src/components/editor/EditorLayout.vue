@@ -17,7 +17,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="flex h-screen">
+  <div class="flex h-full">
     <!-- Tree Panel (35%) -->
     <aside class="w-[35%] min-w-[280px] max-w-[400px]">
       <TreePanel

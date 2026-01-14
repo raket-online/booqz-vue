@@ -19,9 +19,14 @@ export function useTranslator() {
     content: string,
     targetLanguage: string,
     instructions: string,
+    targetAudience: string,
     context?: string
   ): string {
     let prompt = ''
+
+    if (targetAudience) {
+      prompt += `Target audience: ${targetAudience}\n\n`
+    }
 
     if (instructions) {
       prompt += `Translation instructions: ${instructions}\n\n`
@@ -31,9 +36,7 @@ export function useTranslator() {
       prompt += `Context from surrounding text:\n${context}\n\n---\n\n`
     }
 
-    prompt += `Translate the following HTML content to ${targetLanguage}. `
-    prompt += `Preserve all HTML tags and structure exactly as they are. `
-    prompt += `Only translate the text content within the tags.\n\n`
+    prompt += `Translate the following HTML content to ${targetLanguage}.\n\n`
     prompt += `Content to translate:\n${content}`
 
     return prompt
@@ -41,17 +44,20 @@ export function useTranslator() {
 
   function buildImprovementPrompt(
     content: string,
-    instructions: string
+    instructions: string,
+    targetAudience: string
   ): string {
     let prompt = ''
+
+    if (targetAudience) {
+      prompt += `Target audience: ${targetAudience}\n\n`
+    }
 
     if (instructions) {
       prompt += `Improvement instructions: ${instructions}\n\n`
     }
 
-    prompt += `Improve the following HTML content for better fluency and readability. `
-    prompt += `Preserve all HTML tags and structure exactly as they are. `
-    prompt += `Only improve the text content within the tags.\n\n`
+    prompt += `Improve the following HTML content.\n\n`
     prompt += `Content to improve:\n${content}`
 
     return prompt
@@ -90,6 +96,7 @@ export function useTranslator() {
       // Get translation settings
       const targetLanguage = settings.translatorGlobalSettings.defaultTargetLanguage
       const instructions = settings.translatorGlobalSettings.instructions
+      const targetAudience = settings.translatorGlobalSettings.targetAudience
 
       // Get context if enabled
       let context = ''
@@ -103,7 +110,7 @@ export function useTranslator() {
 
       // Build prompt
       const content = result.item.content_text
-      const prompt = buildTranslationPrompt(content, targetLanguage, instructions, context)
+      const prompt = buildTranslationPrompt(content, targetLanguage, instructions, targetAudience, context)
 
       // Call AI
       let translatedContent: string
@@ -164,12 +171,13 @@ export function useTranslator() {
         throw new Error('API key not configured. Please add your API key in Settings.')
       }
 
-      // Get translation settings (reuse for improvement)
-      const instructions = settings.translatorGlobalSettings.instructions || 'Improve for fluency and readability.'
+      // Get improvement settings
+      const improveInstructions = settings.translatorGlobalSettings.improveInstructions
+      const targetAudience = settings.translatorGlobalSettings.targetAudience
 
       // Build prompt
       const content = result.item.content_text
-      const prompt = buildImprovementPrompt(content, instructions)
+      const prompt = buildImprovementPrompt(content, improveInstructions, targetAudience)
 
       // Call AI
       let improvedContent: string
@@ -229,6 +237,7 @@ export function useTranslator() {
 
       const targetLanguage = settings.translatorGlobalSettings.defaultTargetLanguage
       const instructions = settings.translatorGlobalSettings.instructions
+      const targetAudience = settings.translatorGlobalSettings.targetAudience
 
       for (let i = 0; i < allParagraphs.length; i++) {
         if (cancelled.value) break
@@ -236,7 +245,7 @@ export function useTranslator() {
         const paragraph = allParagraphs[i]
 
         // Build prompt (without context for bulk translation)
-        const prompt = buildTranslationPrompt(paragraph.content_text, targetLanguage, instructions)
+        const prompt = buildTranslationPrompt(paragraph.content_text, targetLanguage, instructions, targetAudience)
 
         // Call AI
         let translatedContent: string

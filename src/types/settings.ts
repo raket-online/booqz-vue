@@ -15,6 +15,8 @@ export interface TranslationSettings {
   includeContext: boolean
   contextWordLimit: number
   instructions: string        // Custom translation prompt
+  improveInstructions: string // Custom improvement prompt
+  targetAudience: string      // Target audience for AI
   defaultTargetLanguage: string
 }
 

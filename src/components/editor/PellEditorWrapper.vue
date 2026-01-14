@@ -114,7 +114,7 @@ defineExpose({
 </script>
 
 <template>
-  <div class="pell-editor-wrapper h-full flex flex-col">
+  <div class="pell-editor-wrapper">
     <!-- Dictation Bar -->
     <div class="flex items-center justify-between px-4 py-2.5 border-b animate-slide-up" style="border-color: var(--color-elevated); background: var(--color-surface);">
       <div class="flex items-center gap-3">
@@ -152,50 +152,125 @@ defineExpose({
       </div>
     </div>
 
-    <div ref="editorElement" class="pell flex-1" :class="{ 'pell-disabled': disabled }"></div>
+    <div ref="editorElement" class="pell" :class="{ 'pell-disabled': disabled }"></div>
   </div>
 </template>
 
 <style scoped>
 .pell-editor-wrapper {
-  @apply relative w-full;
-}
-
-.pell {
-  @apply rounded-lg flex flex-col;
-  background: var(--color-surface);
-  border: 1px solid var(--color-elevated);
+  display: grid;
+  grid-template-rows: auto 1fr;
+  height: 100%;
   overflow: hidden;
 }
 
-.pell-content {
-  @apply p-8 flex-1 outline-none overflow-y-auto;
+.pell {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--color-surface);
+  border: 1px solid var(--color-elevated);
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
+:deep(.pell-content) {
+  padding: 2rem;
   font-family: var(--font-sans);
   font-size: 1.05rem;
   line-height: 1.7;
   color: var(--color-text-primary);
+  outline: none;
+  overflow-y: auto;
+  height: 100%;
 }
 
-.pell-content:focus {
-  @apply outline-none;
+:deep(.pell-content::-webkit-scrollbar) {
+  width: 8px;
 }
 
-.pell-content p {
-  @apply mb-3;
+:deep(.pell-content::-webkit-scrollbar-track) {
+  background: var(--color-canvas);
+  border-radius: 4px;
+}
+
+:deep(.pell-content::-webkit-scrollbar-thumb) {
+  background: var(--color-elevated);
+  border-radius: 4px;
+}
+
+:deep(.pell-content::-webkit-scrollbar-thumb:hover) {
+  background: var(--color-border);
+}
+
+:deep(.pell-content:focus) {
+  outline: none;
 }
 
 .pell-disabled {
-  @apply opacity-60 pointer-events-none;
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+:deep(.pell-content) p {
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+}
+
+:deep(.pell-content) h1 {
+  margin-top: 1.5rem;
+  margin-bottom: 0.75rem;
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+:deep(.pell-content) h2 {
+  margin-top: 1.25rem;
+  margin-bottom: 0.75rem;
+  font-size: 1.5rem;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+:deep(.pell-content) h3 {
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+  font-size: 1.25rem;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+:deep(.pell-content) h4 {
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+  font-size: 1.125rem;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+:deep(.pell-content) h5 {
+  margin-top: 0.75rem;
+  margin-bottom: 0.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.5;
 }
 
 :deep(.pell-actionbar) {
-  @apply flex flex-wrap gap-1 p-3 border-b;
-  border-color: var(--color-elevated);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  padding: 0.75rem;
+  border-bottom: 1px solid var(--color-elevated);
   background: var(--color-canvas);
 }
 
 :deep(.pell-button) {
-  @apply px-3 py-1.5 rounded-lg transition-all duration-150 text-sm;
+  padding: 0.375rem 0.75rem;
+  border-radius: 0.5rem;
+  transition: all 150ms;
+  font-size: 0.875rem;
   color: var(--color-text-secondary);
   font-weight: 500;
 }
@@ -226,7 +301,11 @@ defineExpose({
 }
 
 :deep(.pell-content img) {
-  @apply max-w-full h-auto rounded-lg my-3;
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.5rem;
+  margin-top: 0.75rem;
+  margin-bottom: 0.75rem;
 }
 
 /* Microphone states */

@@ -11,7 +11,9 @@ const DEFAULT_SETTINGS: AppSettings = {
   translatorGlobalSettings: {
     includeContext: true,
     contextWordLimit: 200,
-    instructions: '',
+    instructions: 'Maintain formal tone and academic style. Preserve all HTML tags and structure exactly as they are. Only translate the text content within the tags.',
+    improveInstructions: 'Improve for fluency, readability, and clarity while maintaining the original meaning. Preserve all HTML tags and structure exactly as they are. Only improve the text content within the tags.',
+    targetAudience: 'General adult readers',
     defaultTargetLanguage: 'nl'
   },
   translationGlossary: [],

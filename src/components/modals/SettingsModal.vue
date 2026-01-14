@@ -12,6 +12,7 @@ const activeTab = ref('general')
 
 const tabs = [
   { id: 'general', name: 'General', icon: 'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z M15 12a3 3 0 11-6 0 3 3 0 016 0z' },
+  { id: 'improve', name: 'Improve', icon: 'M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2-9-2 9-5.714-2.143L9 7l5.714-2.143L13 3z' },
   { id: 'translation', name: 'Translation', icon: 'M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129' },
   { id: 'glossary', name: 'Glossary', icon: 'M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253' },
   { id: 'apikeys', name: 'API Keys', icon: 'M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z' },
@@ -92,7 +93,18 @@ function close() {
                   <option value="gemini-pro">Google Gemini Pro</option>
                   <option value="gemini-flash">Google Gemini Flash</option>
                 </select>
-                <p class="settings-hint">Select the AI model for translations</p>
+                <p class="settings-hint">Select the AI model for translations and improvements</p>
+              </div>
+
+              <div class="settings-field">
+                <label class="settings-label">Target Audience</label>
+                <input
+                  type="text"
+                  v-model="settingsStore.settings.translatorGlobalSettings.targetAudience"
+                  class="settings-input"
+                  placeholder="e.g., Children, Technical experts, General public"
+                />
+                <p class="settings-hint">Who is this content for? Helps AI adjust tone and complexity (used for both translation and improvement)</p>
               </div>
 
               <div class="settings-field">
@@ -114,6 +126,40 @@ function close() {
                   <option value="ar">Arabic (العربية)</option>
                 </select>
                 <p class="settings-hint">Default language for translations</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Improve Tab -->
+          <div v-if="activeTab === 'improve'" class="animate-fade-in">
+            <h3 class="font-display text-base font-semibold mb-5" style="color: var(--color-text-primary);">Improve Settings</h3>
+
+            <div class="space-y-5">
+              <div class="card p-4 mb-5">
+                <p class="text-sm" style="color: var(--color-text-secondary);">
+                  Configure how AI improves your text for better fluency, readability, and clarity. The Target Audience from General settings is automatically applied.
+                </p>
+              </div>
+
+              <div class="settings-field">
+                <label class="settings-label">Improve Instructions</label>
+                <textarea
+                  v-model="settingsStore.settings.translatorGlobalSettings.improveInstructions"
+                  class="settings-textarea"
+                  rows="8"
+                  placeholder="Additional instructions for improving text (optional)"
+                ></textarea>
+                <p class="settings-hint">Custom prompts to guide text improvement style. These instructions are combined with the Target Audience from General settings to help AI understand how to improve your text.</p>
+              </div>
+
+              <div class="p-4 rounded-lg" style="background: rgba(164, 139, 126, 0.1); border: 1px solid rgba(164, 139, 126, 0.3);">
+                <h4 class="text-sm font-semibold mb-2" style="color: var(--color-text-primary);">Example Instructions</h4>
+                <ul class="text-xs space-y-1" style="color: var(--color-text-secondary);">
+                  <li>• "Make sentences more concise and to the point"</li>
+                  <li>• "Use simpler vocabulary without losing meaning"</li>
+                  <li>• "Improve flow and transitions between paragraphs"</li>
+                  <li>• "Fix grammar and punctuation while maintaining voice"</li>
+                </ul>
               </div>
             </div>
           </div>
@@ -154,10 +200,10 @@ function close() {
                 <textarea
                   v-model="settingsStore.settings.translatorGlobalSettings.instructions"
                   class="settings-textarea"
-                  rows="4"
+                  rows="6"
                   placeholder="Additional instructions for the translator (optional)"
                 ></textarea>
-                <p class="settings-hint">Custom prompts to guide translation style</p>
+                <p class="settings-hint">Custom prompts to guide translation style. These instructions are combined with the Target Audience from General settings.</p>
               </div>
             </div>
           </div>
