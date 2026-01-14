@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref, watch, onBeforeUnmount } from 'vue'
+import { onMounted, ref, watch, onBeforeUnmount, computed } from 'vue'
 import { useSpeech } from '@/composables/useSpeech'
 
 interface Props {
@@ -59,6 +59,12 @@ onMounted(async () => {
       { name: 'olist', icon: '<span style="font-size:15px">1.</span>' },
       { name: 'ulist', icon: '<span style="font-size:15px">•</span>' },
       'link',
+      {
+        name: 'dictate',
+        icon: '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/></svg>',
+        title: 'Dictate (Ctrl+M)',
+        result: () => toggleRecording()
+      },
       { name: 'removeFormat', icon: '✕' }
     ]
   })
@@ -101,6 +107,22 @@ watch(() => props.disabled, (disabled) => {
   }
 })
 
+// Update dictate button state
+const dictateButtonClass = computed(() => {
+  if (hasError.value) return 'mic-error'
+  if (isRecording.value) return 'mic-recording'
+  if (isConnecting.value) return 'mic-connecting'
+  return 'mic-idle'
+})
+
+watch([isIdle, isConnecting, isRecording, hasError], () => {
+  if (!pellInstance) return
+  const buttons = pellInstance.element.querySelectorAll('.pell-button[data-action="dictate"]')
+  buttons.forEach((button: HTMLElement) => {
+    button.className = `pell-button ${dictateButtonClass.value}`
+  })
+})
+
 onBeforeUnmount(() => {
   pellInstance = null
 })
@@ -115,41 +137,18 @@ defineExpose({
 
 <template>
   <div class="pell-editor-wrapper">
-    <!-- Dictation Bar -->
-    <div class="flex items-center justify-between px-4 py-2.5 border-b animate-slide-up" style="border-color: var(--color-elevated); background: var(--color-surface);">
-      <div class="flex items-center gap-3">
-        <!-- Microphone Button -->
-        <button
-          @click="toggleRecording"
-          :disabled="disabled"
-          class="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 hover:scale-105"
-          :class="{
-            'mic-idle': isIdle,
-            'mic-connecting': isConnecting,
-            'mic-recording': isRecording,
-            'mic-error': hasError
-          }"
-          :title="isRecording ? 'Stop recording (Ctrl+M)' : 'Start dictation (Ctrl+M)'"
-        >
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/>
-          </svg>
-          <span v-if="isRecording" class="flex h-2 w-2">
-            <span class="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75" style="background: white;"></span>
-            <span class="relative inline-flex rounded-full h-2 w-2" style="background: white;"></span>
-          </span>
-        </button>
-
-        <!-- Status -->
-        <span class="text-xs" style="color: var(--color-text-tertiary);">
-          {{ isIdle ? 'Click to dictate' : isConnecting ? 'Connecting...' : isRecording ? 'Recording...' : 'Error' }}
+    <!-- Recording Status Indicator (small, above actionbar when recording) -->
+    <div v-if="isRecording || isConnecting" class="px-3 py-1.5 text-xs flex items-center justify-between animate-fade-in" :class="{ 'bg-red-50': isRecording, 'bg-yellow-50': isConnecting }">
+      <span class="flex items-center gap-2" :class="{ 'text-red-600': isRecording, 'text-yellow-600': isConnecting }">
+        <span v-if="isRecording" class="flex h-2 w-2">
+          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+          <span class="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
         </span>
-      </div>
-
-      <!-- Word Count (optional enhancement) -->
-      <div class="text-xs font-mono" style="color: var(--color-text-tertiary);">
+        {{ isRecording ? 'Recording...' : 'Connecting...' }}
+      </span>
+      <span class="text-xs font-mono text-gray-500">
         {{ props.modelValue.replace(/<[^>]*>/g, '').split(/\s+/).filter(w => w).length }} words
-      </div>
+      </span>
     </div>
 
     <div ref="editorElement" class="pell" :class="{ 'pell-disabled': disabled }"></div>
@@ -273,11 +272,44 @@ defineExpose({
   font-size: 0.875rem;
   color: var(--color-text-secondary);
   font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 :deep(.pell-button:hover) {
   color: var(--color-text-primary);
   background: var(--color-elevated);
+}
+
+:deep(.pell-button[data-action='dictate']) {
+  position: relative;
+}
+
+:deep(.pell-button[data-action='dictate'].mic-idle) {
+  color: var(--color-text-secondary);
+}
+
+:deep(.pell-button[data-action='dictate'].mic-idle:hover) {
+  color: var(--color-accent);
+  background: rgba(124, 156, 108, 0.1);
+}
+
+:deep(.pell-button[data-action='dictate'].mic-connecting) {
+  color: var(--color-warning);
+  background: rgba(212, 165, 116, 0.15);
+  animation: pulse-subtle 1.5s infinite;
+}
+
+:deep(.pell-button[data-action='dictate'].mic-recording) {
+  color: white;
+  background: var(--color-error);
+  animation: pulse-recording 1.5s infinite;
+}
+
+:deep(.pell-button[data-action='dictate'].mic-error) {
+  color: var(--color-error);
+  background: rgba(198, 93, 93, 0.15);
 }
 
 :deep(.pell-button:focus) {

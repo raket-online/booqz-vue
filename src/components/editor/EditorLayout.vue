@@ -19,7 +19,7 @@ onMounted(async () => {
 <template>
   <div class="flex h-full">
     <!-- Tree Panel (35%) -->
-    <aside class="w-[35%] min-w-[280px] max-w-[400px]">
+    <aside class="w-[35%] min-w-[280px] max-w-[400px] h-full overflow-hidden">
       <TreePanel
         @select-section="(id) => console.log('Selected section:', id)"
         @select-content="(id) => console.log('Selected content:', id)"
@@ -27,14 +27,14 @@ onMounted(async () => {
     </aside>
 
     <!-- Editor Panel (flexible, adjusts based on notes) -->
-    <main class="flex-[3]" :class="{ 'w-0': editorStore.notesPanelOpen }">
+    <main class="flex-[3] h-full overflow-hidden" :class="{ 'w-0': editorStore.notesPanelOpen }">
       <EditorPanel />
     </main>
 
     <!-- Notes Panel (flexible width when open) - moved one position down -->
     <aside
       v-if="editorStore.notesPanelOpen"
-      class="flex-1 min-w-[180px] max-w-[250px]"
+      class="flex-1 min-w-[180px] max-w-[250px] h-full overflow-hidden"
     >
       <NotesPanel />
     </aside>

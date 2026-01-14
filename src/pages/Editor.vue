@@ -101,7 +101,9 @@ onUnmounted(() => {
     </header>
 
     <!-- Editor Layout -->
-    <EditorLayout />
+    <div class="flex-1 overflow-hidden">
+      <EditorLayout />
+    </div>
 
     <!-- Settings Modal -->
     <SettingsModal v-if="showSettings" @close="showSettings = false" />

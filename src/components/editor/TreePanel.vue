@@ -224,8 +224,8 @@ function handleTitleKeydown(event: KeyboardEvent) {
       </div>
     </div>
 
-    <!-- Footer with Action Buttons & Save Status - Sticky -->
-    <div class="sticky bottom-0 border-t animate-fade-in" style="border-color: var(--color-elevated); background: var(--color-surface);">
+    <!-- Footer with Action Buttons & Save Status -->
+    <div class="border-t animate-fade-in" style="border-color: var(--color-elevated); background: var(--color-surface);">
       <!-- Action Buttons Grid - 4 Buttons -->
       <div class="px-3 py-2 border-b" style="border-color: var(--color-elevated);">
         <div class="grid grid-cols-4 gap-2">
