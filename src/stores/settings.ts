@@ -7,7 +7,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   google_api_key: null,
   deepgram_api_key: null,
   imgbb_api_key: null,
-  selectedAIModel: 'openai-gpt4',
+  selectedAIModel: 'gemini-2.5-flash-lite',
   translatorGlobalSettings: {
     includeContext: true,
     contextWordLimit: 200,

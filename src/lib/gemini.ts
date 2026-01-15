@@ -41,9 +41,6 @@ export async function callGemini(
 }
 
 export function getGeminiModelId(modelId: string): string {
-  const modelMap: Record<string, string> = {
-    'gemini-pro': 'gemini-3-pro-preview',
-    'gemini-flash': 'gemini-3-flash-preview'
-  }
-  return modelMap[modelId] || modelId
+  // Simply return the model ID as-is (no mapping needed)
+  return modelId
 }

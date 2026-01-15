@@ -32,8 +32,6 @@ export async function callOpenAI(
 }
 
 export function getOpenAIModelId(modelId: string): string {
-  const modelMap: Record<string, string> = {
-    'openai-gpt4': 'gpt-4.1-mini-2025-04-14'
-  }
-  return modelMap[modelId] || 'gpt-4.1-mini-2025-04-14'
+  // Simply return the model ID as-is (no mapping needed)
+  return modelId
 }

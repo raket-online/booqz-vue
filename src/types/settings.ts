@@ -2,7 +2,7 @@
 
 import type { Book } from './book'
 
-export type AIModelId = 'openai-gpt4' | 'gemini-pro' | 'gemini-flash'
+export type AIModelId = 'gpt-5.2' | 'gpt-5-mini' | 'gemini-3-flash-preview' | 'gemini-2.5-flash-lite' | 'gemini-3-pro-preview'
 
 export interface AIModel {
   id: AIModelId

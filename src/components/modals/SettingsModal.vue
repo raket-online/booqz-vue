@@ -89,9 +89,11 @@ function close() {
                   v-model="settingsStore.settings.selectedAIModel"
                   class="settings-select"
                 >
-                  <option value="openai-gpt4">OpenAI GPT-4 Mini</option>
-                  <option value="gemini-pro">Google Gemini Pro</option>
-                  <option value="gemini-flash">Google Gemini Flash</option>
+                  <option value="gemini-2.5-flash-lite">Gemini 2.5 Flash Lite</option>
+                  <option value="gemini-3-flash-preview">Gemini 3 Flash</option>
+                  <option value="gemini-3-pro-preview">Gemini 3 Pro</option>
+                  <option value="gpt-5-mini">GPT 5.0 Mini</option>
+                  <option value="gpt-5.2">GPT 5.2</option>
                 </select>
                 <p class="settings-hint">Select the AI model for translations and improvements</p>
               </div>
