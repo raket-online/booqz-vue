@@ -4,14 +4,13 @@ import { useBookStore } from '@/stores/book'
 import { useEditorStore } from '@/stores/editor'
 import { callOpenAI, getOpenAIModelId } from '@/lib/openai'
 import { callGemini, getGeminiModelId } from '@/lib/gemini'
+import { isLoadingGlobal, translatingGlobal, improvingGlobal } from '@/composables/useGlobalLoader'
 
 export function useTranslator() {
   const settingsStore = useSettingsStore()
   const bookStore = useBookStore()
   const editorStore = useEditorStore()
 
-  const translating = ref(false)
-  const improving = ref(false)
   const progress = ref({ current: 0, total: 0 })
   const cancelled = ref(false)
 
@@ -74,8 +73,9 @@ export function useTranslator() {
       throw new Error('Selected item is not a paragraph')
     }
 
-    translating.value = true
+    translatingGlobal.value = true
     cancelled.value = false
+    isLoadingGlobal.value = true
 
     try {
       const settings = settingsStore.settings
@@ -137,8 +137,9 @@ export function useTranslator() {
       console.error('Translation error:', error)
       throw error
     } finally {
-      translating.value = false
-    }
+      translatingGlobal.value = false
+      isLoadingGlobal.value = false
+      }
   }
 
   async function improveCurrentItem(): Promise<void> {
@@ -152,8 +153,9 @@ export function useTranslator() {
       throw new Error('Selected item is not a paragraph')
     }
 
-    improving.value = true
+    improvingGlobal.value = true
     cancelled.value = false
+    isLoadingGlobal.value = true
 
     try {
       const settings = settingsStore.settings
@@ -204,8 +206,9 @@ export function useTranslator() {
       console.error('Improvement error:', error)
       throw error
     } finally {
-      improving.value = false
-    }
+      improvingGlobal.value = false
+      isLoadingGlobal.value = false
+      }
   }
 
   async function translateAll(onProgress?: (current: number, total: number) => void): Promise<void> {
@@ -215,7 +218,7 @@ export function useTranslator() {
       throw new Error('No paragraphs to translate')
     }
 
-    translating.value = true
+    translatingGlobal.value = true
     cancelled.value = false
     progress.value = { current: 0, total: allParagraphs.length }
 
@@ -280,7 +283,7 @@ export function useTranslator() {
       console.error('Batch translation error:', error)
       throw error
     } finally {
-      translating.value = false
+      translatingGlobal.value = false
       progress.value = { current: 0, total: 0 }
     }
   }
@@ -305,8 +308,8 @@ export function useTranslator() {
   }
 
   return {
-    translating,
-    improving,
+    translating: translatingGlobal,
+    improving: improvingGlobal,
     progress,
     translateCurrentItem,
     improveCurrentItem,

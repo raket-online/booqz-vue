@@ -4,6 +4,7 @@ import { useBookStore } from '@/stores/book'
 import { useEditorStore } from '@/stores/editor'
 import EditorLayout from '@/components/editor/EditorLayout.vue'
 import SettingsModal from '@/components/modals/SettingsModal.vue'
+import FullscreenLoader from '@/components/layout/FullscreenLoader.vue'
 
 const bookStore = useBookStore()
 const editorStore = useEditorStore()
@@ -107,6 +108,9 @@ onUnmounted(() => {
 
     <!-- Settings Modal -->
     <SettingsModal v-if="showSettings" @close="showSettings = false" />
+
+    <!-- Fullscreen Loader -->
+    <FullscreenLoader />
   </div>
 </template>
 

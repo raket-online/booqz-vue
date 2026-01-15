@@ -85,8 +85,8 @@ function closePanel() {
       <div v-if="selectedItem" class="h-full animate-fade-in">
         <textarea
           v-model="notes"
-          class="w-full h-full min-h-[300px] p-5 border-0 resize-none focus:outline-none focus:ring-0 text-sm body input"
-          style="background: var(--color-canvas); color: var(--color-text-primary); line-height: 1.6;"
+          class="w-full h-full p-5 border-0 resize-none focus:outline-none focus:ring-0 text-sm body input"
+          style="background: var(--color-canvas); color: var(--color-text-primary); line-height: 1.6; max-height: 400px;"
           placeholder="Add your thoughts, context, or reminders here..."
         ></textarea>
       </div>

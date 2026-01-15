@@ -161,26 +161,38 @@ async function handleImprove() {
           <button
             @click="handleImprove"
             :disabled="!editorStore.selectedItemId || improving || translating"
-            class="btn btn-icon relative hover-lift"
-            :style="!editorStore.selectedItemId || improving || translating ? 'opacity: 0.4;' : 'opacity: 1; color: #A48B7E;'"
-            title="Improve with AI"
+            class="btn btn-icon relative hover-lift group"
+            :style="!editorStore.selectedItemId || improving || translating ? 'opacity: 0.4;' : 'opacity: 1; color: var(--color-accent);'"
+            title="Improve text with AI"
           >
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2-9-2 9-5.714-2.143L9 7l5.714-2.143L13 3z"/>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
             </svg>
-            <span v-if="improving" class="absolute inset-0 rounded-lg animate-ping" style="background: rgba(164, 139, 126, 0.3);"></span>
+            <span v-if="improving" class="absolute inset-0 rounded-lg animate-ping" style="background: rgba(124, 156, 108, 0.3);"></span>
+
+            <!-- Tooltip -->
+            <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-50 shadow-lg"
+                 style="background: #2d2d2d; color: white;">
+              Improve with AI
+            </div>
           </button>
           <button
             @click="handleTranslate"
             :disabled="!editorStore.selectedItemId || improving || translating"
-            class="btn btn-icon relative hover-lift"
+            class="btn btn-icon relative hover-lift group"
             :style="!editorStore.selectedItemId || improving || translating ? 'opacity: 0.4;' : 'opacity: 1; color: var(--color-accent);'"
             title="Translate with AI"
           >
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129"/>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/>
             </svg>
             <span v-if="translating" class="absolute inset-0 rounded-lg animate-ping" style="background: rgba(124, 156, 108, 0.3);"></span>
+
+            <!-- Tooltip -->
+            <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-50 shadow-lg"
+                 style="background: #2d2d2d; color: white;">
+              Translate with AI
+            </div>
           </button>
         </div>
 

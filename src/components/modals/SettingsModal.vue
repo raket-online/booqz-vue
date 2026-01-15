@@ -116,6 +116,7 @@ function close() {
                   class="settings-select"
                 >
                   <option value="nl">Dutch (Nederlands)</option>
+                  <option value="en">English (English)</option>
                   <option value="de">German (Deutsch)</option>
                   <option value="fr">French (Français)</option>
                   <option value="es">Spanish (Español)</option>

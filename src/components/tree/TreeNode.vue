@@ -278,7 +278,7 @@ onMounted(() => {
           <!-- View Mode -->
           <template v-if="!isEditingTitle">
             <div class="flex items-center gap-1 group">
-              <h3 class="text-sm font-medium truncate transition-colors duration-200 flex-1"
+              <h3 class="text-base font-medium truncate transition-colors duration-200 flex-1"
                   :style="isSectionSelected ? 'color: var(--color-text-primary);' : 'color: var(--color-text-secondary);'">
                 {{ section.title }}
               </h3>
@@ -302,7 +302,7 @@ onMounted(() => {
                  @keydown="handleTitleKeydown"
                  @blur="saveTitle"
                  @click.stop
-                 class="w-full text-sm font-medium px-1.5 py-0.5 rounded border"
+                 class="w-full text-base font-medium px-1.5 py-0.5 rounded border"
                  style="background: var(--color-surface); border-color: var(--color-accent); color: var(--color-text-primary); outline: none;"
           />
         </div>
@@ -382,8 +382,7 @@ onMounted(() => {
             <p class="text-xs truncate transition-colors duration-200 font-body"
                :style="isContentSelected(item.id) ? 'color: var(--color-text-primary);' : 'color: var(--color-text-secondary);'">
               <span v-if="item.type === 'paragraph'">{{ getTextPreview(item.content_text) }}</span>
-              <span v-else class="flex items-center gap-1">
-                <span style="color: #A48B7E;">🖼</span>
+              <span v-else>
                 {{ (item as any).name || 'Image' }}
               </span>
             </p>
